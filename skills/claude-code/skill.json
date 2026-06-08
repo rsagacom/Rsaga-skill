@@ -1,0 +1,22 @@
+{
+  "name": "novel-to-comic",
+  "description": "小说转漫画引擎 - 支持分镜规划、批量生图、视觉审核、排版输出",
+  "version": "0.1.0",
+  "author": "rsaga",
+  "entry": {
+    "type": "claude-code-skill",
+    "system_prompt_file": "../../templates/system-prompt.md"
+  },
+  "capabilities": [
+    "读取小说原文并生成漫画分镜脚本",
+    "调用本地 Python 脚本批量生成画格",
+    "调用多模态模型进行视觉审核",
+    "根据审核结果修复问题画格",
+    "排版输出 B5判 PDF"
+  ],
+  "required_env": [
+    "STEP_API_KEY",
+    "KIMI_API_KEY"
+  ],
+  "working_dir": "/Volumes/AJW-Data/Projects/novel-to-comic-engine"
+}

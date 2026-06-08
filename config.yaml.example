@@ -1,0 +1,57 @@
+# 小说转漫画引擎 - 配置文件模板
+# 复制为 config.yaml 后填入真实 API key
+# 重要：config.yaml 已加入 .gitignore，不要提交到版本库
+
+providers:
+  image:
+    # 默认生图 provider
+    default: step
+    step:
+      # 支持从环境变量读取：${STEP_API_KEY}
+      # 或直接填写："sk-..."
+      api_key: "${STEP_API_KEY}"
+      api_url: "https://api.stepfun.com/v1"
+      model: "step-image-edit-2"
+      size: "1024x1024"
+
+  vision:
+    # 默认视觉审核 provider
+    default: step
+    step:
+      api_key: "${STEP_API_KEY}"
+      api_url: "https://api.stepfun.com/v1"
+      model: "step-3.7-flash"
+      max_tokens: 400
+      # 两次 API 调用间隔（秒），避免 429 限流
+      sleep_seconds: 1.5
+    kimi:
+      api_key: "${KIMI_API_KEY}"
+      api_url: "https://api.moonshot.cn/v1"
+      model: "kimi-k2.6"
+      max_tokens: 2000
+      sleep_seconds: 1.5
+
+project:
+  # 项目输出根目录
+  output_dir: "./projects/example/output"
+  # Mac 系统字体路径
+  # Windows 用户请改为 C:/Windows/Fonts/simhei.ttf 或类似路径
+  # Linux 用户请改为 /usr/share/fonts/truetype/...
+  font_title: "/System/Library/Fonts/STHeiti Medium.ttc"
+  font_body: "/System/Library/Fonts/STHeiti Medium.ttc"
+  font_light: "/System/Library/Fonts/STHeiti Light.ttc"
+
+style:
+  # 固定画风后缀，会追加到每个 prompt 末尾
+  prompt_suffix: "Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
+  # B5判尺寸
+  page_width_mm: 182
+  page_height_mm: 257
+  dpi: 150
+  margin_mm: 12
+  gutter_mm: 5
+
+# 角色外貌锁定（会在每个含主角的 prompt 中嵌入）
+characters:
+  qiyuan: "Young Chinese man 25yo, thin black-frame glasses, short black hair with bangs covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, tired hollow eyes with dark circles, pale skin"
+  woman: "Woman with very long straight black hair flowing down past waist, dark trench coat, seen from behind only, NO face visible"
