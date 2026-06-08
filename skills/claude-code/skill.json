@@ -18,5 +18,5 @@
     "STEP_API_KEY",
     "KIMI_API_KEY"
   ],
-  "working_dir": "/Volumes/AJW-Data/Projects/novel-to-comic-engine"
+  "working_dir": "."
 }

@@ -49,7 +49,6 @@ novel-to-comic-engine/
 ### 1. 克隆项目
 
 ```bash
-cd /Volumes/AJW-Data/Projects  # 或其他工作目录
 git clone <repo-url> novel-to-comic-engine
 cd novel-to-comic-engine
 ```
@@ -68,18 +67,15 @@ cp config.yaml.example config.yaml
 
 ### 3. 安装 Claude Code skill
 
-在 `.claude/settings.json` 中添加：
+在 `~/.claude/skills/` 下创建软链接：
 
-```json
-{
-  "skills": [
-    {
-      "name": "novel-to-comic",
-      "path": "/Volumes/AJW-Data/Projects/novel-to-comic-engine/skills/claude-code"
-    }
-  ]
-}
+```bash
+ln -s /path/to/novel-to-comic-engine ~/.claude/skills/novel-to-comic
 ```
+
+（Windows 用户用 mklink，macOS/Linux 用 ln -s）
+
+CC 启动时会自动识别 `~/.claude/skills/` 下的 SKILL.md。
 
 ### 4. 使用流程
 

@@ -4,10 +4,7 @@
 
 ## 工作目录
 
-所有操作默认在项目根目录：
-```
-/Volumes/AJW-Data/Projects/novel-to-comic-engine
-```
+所有操作默认在项目根目录（即 SKILL.md 所在目录）。
 
 ## 核心流程
 

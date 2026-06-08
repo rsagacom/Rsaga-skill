@@ -3,7 +3,7 @@ name: novel-to-comic
 description: 小说转漫画引擎 - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持逐句解析分镜、批量生图、多模态视觉审核、自动修复问题画格、排版输出 PDF。
 version: 0.1.0
 metadata:
-  working_dir: /Volumes/AJW-Data/Projects/novel-to-comic-engine
+  working_dir: .
   requires:
     env:
       - STEP_API_KEY

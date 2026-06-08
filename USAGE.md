@@ -1,7 +1,7 @@
 # 小说转漫画引擎 — 使用说明
 
-> 项目路径：`/Volumes/AJW-Data/Projects/novel-to-comic-engine`
-> 适用小说：《桥底的溃烂神明》及类似中篇/长篇小说的漫画化
+> 项目路径：`novel-to-comic-engine/`（克隆后的本地路径）
+> 适用小说：中篇/长篇小说的漫画化
 
 ---
 
@@ -25,7 +25,7 @@ pip3 install pillow reportlab pyyaml
 复制配置模板并填入 API Key：
 
 ```bash
-cd /Volumes/AJW-Data/Projects/novel-to-comic-engine
+cd novel-to-comic-engine
 cp config.yaml.example config.yaml
 ```
 
