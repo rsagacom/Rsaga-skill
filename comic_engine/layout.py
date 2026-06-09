@@ -184,6 +184,74 @@ class ComicLayoutEngine:
             self.draw_panel_border(draw, boxes[i])
         return boxes[:len(names)]
 
+    def layout_hero(self, page, draw, names, input_dir):
+        """上大下二：1 格占上 65% + 2 格占下 35%"""
+        w_full = self.page_w - self.margin * 2
+        h_top = int((self.page_h - self.margin * 2 - self.gutter) * 0.65)
+        h_bot = self.page_h - self.margin * 2 - self.gutter - h_top
+        w_bot = (w_full - self.gutter) // 2
+        boxes = [
+            (self.margin, self.margin, self.margin + w_full, self.margin + h_top),
+            (self.margin, self.margin + h_top + self.gutter, self.margin + w_bot, self.page_h - self.margin),
+            (self.margin + w_bot + self.gutter, self.margin + h_top + self.gutter, self.page_w - self.margin, self.page_h - self.margin),
+        ]
+        for i, name in enumerate(names[:3]):
+            img = self.load_panel(name, input_dir, boxes[i][2] - boxes[i][0], boxes[i][3] - boxes[i][1])
+            if img:
+                page.paste(img, (boxes[i][0], boxes[i][1]))
+            self.draw_panel_border(draw, boxes[i])
+        return boxes[:len(names)]
+
+    def layout_triple_row(self, page, draw, names, input_dir):
+        """三等分行：3 格上下排列"""
+        w_full = self.page_w - self.margin * 2
+        h_each = (self.page_h - self.margin * 2 - self.gutter * 2) // 3
+        boxes = []
+        for i in range(3):
+            y = self.margin + i * (h_each + self.gutter)
+            boxes.append((self.margin, y, self.margin + w_full, y + h_each))
+        for i, name in enumerate(names[:3]):
+            img = self.load_panel(name, input_dir, boxes[i][2] - boxes[i][0], boxes[i][3] - boxes[i][1])
+            if img:
+                page.paste(img, (boxes[i][0], boxes[i][1]))
+            self.draw_panel_border(draw, boxes[i])
+        return boxes[:len(names)]
+
+    def layout_1plus3(self, page, draw, names, input_dir):
+        """1 宽幅 + 3 小格：上方一横条 + 下方三格"""
+        w_full = self.page_w - self.margin * 2
+        h_top = int((self.page_h - self.margin * 2 - self.gutter * 2) * 0.35)
+        h_bot = self.page_h - self.margin * 2 - self.gutter * 2 - h_top
+        w3 = (w_full - self.gutter * 2) // 3
+        boxes = [(self.margin, self.margin, self.margin + w_full, self.margin + h_top)]
+        for i in range(3):
+            x = self.margin + i * (w3 + self.gutter)
+            boxes.append((x, self.margin + h_top + self.gutter, x + w3, self.page_h - self.margin))
+        for i, name in enumerate(names[:4]):
+            img = self.load_panel(name, input_dir, boxes[i][2] - boxes[i][0], boxes[i][3] - boxes[i][1])
+            if img:
+                page.paste(img, (boxes[i][0], boxes[i][1]))
+            self.draw_panel_border(draw, boxes[i])
+        return boxes[:len(names)]
+
+    def layout_big_top_2(self, page, draw, names, input_dir):
+        """上大下二平分：1 格占上 60% + 2 格平分下 40%"""
+        w_full = self.page_w - self.margin * 2
+        h_top = int((self.page_h - self.margin * 2 - self.gutter) * 0.6)
+        h_bot = self.page_h - self.margin * 2 - self.gutter - h_top
+        w_bot = (w_full - self.gutter) // 2
+        boxes = [
+            (self.margin, self.margin, self.margin + w_full, self.margin + h_top),
+            (self.margin, self.margin + h_top + self.gutter, self.margin + w_bot, self.page_h - self.margin),
+            (self.margin + w_bot + self.gutter, self.margin + h_top + self.gutter, self.page_w - self.margin, self.page_h - self.margin),
+        ]
+        for i, name in enumerate(names[:3]):
+            img = self.load_panel(name, input_dir, boxes[i][2] - boxes[i][0], boxes[i][3] - boxes[i][1])
+            if img:
+                page.paste(img, (boxes[i][0], boxes[i][1]))
+            self.draw_panel_border(draw, boxes[i])
+        return boxes[:len(names)]
+
     def draw_bubble(self, draw, box, style, text):
         # 简化版气泡绘制，完整版可参考原脚本
         x1, y1, x2, y2 = box
@@ -277,9 +345,14 @@ class ComicLayoutEngine:
 
         layouts = {
             "full": self.layout_full,
+            "spotlight": self.layout_full,  # 特写单页，同 full 但语义不同
             "2x2": self.layout_2x2,
             "1x2": self.layout_1x2,
             "2x1x2": self.layout_2x1x2,
+            "hero": self.layout_hero,
+            "triple-row": self.layout_triple_row,
+            "1+3": self.layout_1plus3,
+            "big-top-2": self.layout_big_top_2,
         }
 
         page_images = []

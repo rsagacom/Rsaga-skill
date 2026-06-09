@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""第七章 烧烤摊 — 陈姝的世界观（38格）"""
+Q="Young Chinese man 25yo, thin black-frame glasses, short black hair with bangs, beige casual blazer, dark blue V-neck shirt, tired hollow eyes, pale skin"
+G="High school girl with ponytail, wearing school uniform, young face but tired knowing eyes,棒棒糖 in mouth"
+S="Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
+PANELS=[
+("P38_扉页",f"Split: barbecue stall smoke at night, {Q} sitting across from {G} at plastic table, skewers between them, worlds colliding. {S}","abstract"),
+("P01_凌晨两点",f"Wide shot night street barbecue stall, white smoke裹着 cumin scent under streetlamp, moths hitting bulb repeatedly, deserted late night scene. {S}","scene"),
+("P02_撕着吃",f"Close-up {G} eating lamb skewers hungrily, not delicate eating but tearing meat off, cheeks stuffed, breathing急促, like someone who has not tasted real food for long time. {S}","character"),
+("P03_还没缓过来",f"Medium shot {Q} sitting across plastic stool, fingers gripping table edge white-knuckled,心跳 still racing from near death, barely processing. {S}","character"),
+("P04_哺乳类0.3",f"Close-up {G} pointing skewer at {Q}, casually reciting biology statistics about mammalian cannibalism rates, absurd学术 tone. {S}","character"),
+("P05_人类15%",f"{G} flipping skewer, human同类相残 rate高达15 percent across history, {Q} completely lost, why is this girl talking biology after blowing up monster. {S}","character"),
+("P06_图什么",f"Close-up {G} face冷笑, cumin on嘴角, asking why humans kill each other ten times more than other primates, rhetorical question hanging. {S}","character"),
+("P07_2053",f"Wide shot visual: futuristic city skyline appearing in smoke above烧烤炉, AI渗透产业链 vision, not末日 but consensus:计算力 is civilization engine. {S}","abstract"),
+("P08_算力闲置",f"Abstract: visual of computing resources reallocating from商业预测 down to犯罪率预测, granularity increasing, systems seeking purpose for idle power. {S}","abstract"),
+("P09_咬脆骨",f"Close-up {G} biting cartilage with loud crunch at word犯罪率, timing deliberate, {Q} hand unconsciously reaching for water cup. {S}","character"),
+("P10_个体命运",f"Abstract: human silhouette with命运 threads, computing颗粒度 pushed to极限, individual destiny calculable, predictable, manipulatable. {S}","abstract"),
+("P11_气运",f"Wide shot visual: cosmic scale balancing survival口粮, when one dies their leftover口粮 falls into another pocket, universe公平 but cruel. {S}","abstract"),
+("P12_签子折断",f"Close-up {G} hands snapping empty skewer with loud crack,断茬 stabbed into greasy tabletop, quantum computer推演出的华容道模型. {S}","character"),
+("P13_100%可控",f"Extreme close-up {G} eyes staring into {Q}, saying掉落机制 now completely controllable predictable, kill specific person at specific node,精准掠夺口粮. {S}","character"),
+("P14_地狱烈度",f"Abstract: visual of humanity fighting over survival口粮, apocalyptic scale conflict, what烈度 of地狱 would that become. {S}","abstract"),
+("P15_房东的起源",f"{G} holding new skewer rotating it, explaining房东滋生 from that扭曲土壤, creatures not satisfied卷生卷死 in own timeline,偷渡降维收割. {S}","character"),
+("P16_那个女人",f"Flashback: woman in trench coat walking into bridge cave darkness, {Q} watching, the moment everything began. {S}","supernatural"),
+("P17_夺舍失败",f"Abstract:房东 attempting to possess woman body but failing, half-life stuck in bridge cave dimension夹缝,仇敌 finding other half through data链路. {S}","abstract"),
+("P18_吹灭蜡烛",f"Close-up {G} gently blowing air like extinguishing candle, landlord other half snuffed instantly, {Q} processing how his parasite died. {S}","character"),
+("P19_手里烤串停了",f"Close-up {Q} hand holding skewer frozen mid-air, oil dripping onto greasy table, face blank,巨大虚无 before cold realization seeps in. {S}","character"),
+("P20_刀柄",f"Medium shot {Q} realization crashing: 230 people he killed, he was not executioner, he was刀柄, landlord wielded him, he was not even the knife. {S}","character"),
+("P21_手机扔出",f"Dynamic shot: phone flying through air toward barbecue老板,老板 catching one-handed without looking,继续翻腰子, casual transaction. {S}","scene"),
+("P22_处理赃物",f"{G} explaining phone tracked, MAC行为特征全部被记录,清道夫嗅着气运 locating him through network, must abandon everything. {S}","character"),
+("P23_怎么办",f"Close-up {Q} face, voice dry like砂纸, what do I do, bare meat walking with 230 lives of口粮,赤条条摆在街头. {S}","character"),
+("P24_最危险最安全",f"{G} leaning forward, saying most dangerous place is safest, must go to their era, their时间线, the future. {S}","character"),
+("P25_底层规则",f"{G} explaining: here高维偷渡客 kill you for free like stepping on insect, but in future world命运华容道 locks everyone,杀戮 costs极高算力代价. {S}","character"),
+("P26_她在撒谎吗",f"Close-up {Q} eyes, brain racing, evaluating: is she lying, remembering monster with black符文, remembering意念杀人, remembering landlord death. {S}","character"),
+("P27_我还能回来吗",f"Medium shot {Q} asking deeper question, voice heavier, what about survival in future world where he knows nothing, how to hide, how to live. {S}","character"),
+("P28_站起来",f"{G} standing up brushing孜然 ash from uniform skirt, saying信不信随你, how to live she will teach when they get there. {S}","character"),
+("P29_佘山",f"Wide shot: {G} turning away,背影, saying one week later, 2am,佘山山顶, highest rock, wait for me. {S}","scene"),
+("P30_为什么佘山",f"{Q} standing abruptly plastic stool clattering, shouting questions: why佘山, why midnight, and what is your name. {S}","character"),
+("P31_她停下了",f"Close-up {G} pausing mid-step,侧脸 in streetlamp light, sharp轮廓 like blade, eyes微挑,嘴角 unfinished smile. {S}","character"),
+("P32_陈姝",f"Extreme close-up {G} face,路灯碎成两点 light in pupils, saying my name is陈姝, voice soft but final. {S}","character"),
+("P33_溶解",f"Wide shot: {G} body dissolving into night like ink in water,一节一节散开 merging with dark alley, leaving no trace. {S}","supernatural"),
+("P34_飞蛾还在撞",f"Wide shot烧烤摊: charcoal still cracking, white smoke rising through empty darkness, moths still hitting lamp,老板 still flipping腰子. {S}","scene"),
+("P35_攥着凉肉串",f"Medium shot {Q} standing alone in smoke-filled烧烤摊, clutching half-eaten cold skewer, facing world turned completely upside down. {S}","character"),
+]
