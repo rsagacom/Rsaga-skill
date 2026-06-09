@@ -1,7 +1,7 @@
 {
   "name": "novel-to-comic",
   "description": "小说转漫画引擎 - 支持分镜规划、批量生图、视觉审核、排版输出",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "rsaga",
   "entry": {
     "type": "claude-code-skill",
