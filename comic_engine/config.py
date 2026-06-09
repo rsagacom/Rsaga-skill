@@ -81,7 +81,11 @@ def _parse_simple_yaml(path):
 
 
 def get_api_key(config, provider_type, provider_name):
-    """获取 API key"""
+    """获取 API key。优先级：config.yaml > 环境变量。
+
+    Raises:
+        RuntimeError: 未配置且环境变量也不存在时抛出，含明确修复指引。
+    """
     key = (
         config.get("providers", {})
         .get(provider_type, {})
@@ -91,4 +95,11 @@ def get_api_key(config, provider_type, provider_name):
     if not key:
         env_var = f"{provider_name.upper()}_API_KEY"
         key = os.environ.get(env_var, "")
+    if not key:
+        raise RuntimeError(
+            f"未配置 {provider_name} 的 API key。\n"
+            f"修复方法（任选其一）：\n"
+            f"  1. 编辑 config.yaml，填入真实 key：providers.{provider_type}.{provider_name}.api_key\n"
+            f"  2. export {env_var}='你的key' 后再运行"
+        )
     return key

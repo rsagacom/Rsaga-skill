@@ -32,5 +32,10 @@ wheels/
 .installed.cfg
 *.egg
 
+# Temp generation scripts (may contain API key references)
+*_gen.py
+*_run_generate.py
+run_gen.py
+
 # macOS
 .DS_Store
