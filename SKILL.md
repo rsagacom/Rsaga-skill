@@ -1,7 +1,7 @@
 ---
 name: novel-to-comic
 description: 小说转漫画引擎 - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1-2句/格粒度控制）、逐句解析分镜、批量生图、多模态视觉审核、自动修复问题画格、排版输出 PDF。
-version: 0.2.0
+version: 0.3.0
 metadata:
   working_dir: .
   requires:
@@ -19,6 +19,12 @@ metadata:
 ```
 小说原文 → 改编层 → 分镜脚本 → 批量生图 → 视觉审核 → 修复问题 → 排版输出 PDF
 ```
+
+### Step 0: 初始化项目（首次）
+```bash
+python3 scripts/init_project.py <项目名>
+```
+自动创建项目目录结构、章节模板、分镜模板、排版配置模板。
 
 ### Step 1: 读取小说
 读取 `projects/<项目名>/chapter_XX.md`，理解剧情结构、角色、情绪转折。
@@ -132,18 +138,28 @@ metadata:
 ### Step 2: 生成分镜脚本
 基于改编层（`adaptation_chXX.md`）生成分镜脚本，创建 `projects/<项目名>/storyboard_chXX.py`。
 
-每个元素为元组：`(画格名称, 英文 prompt)`
+每个元素为元组：
+- 2 元素：`(画格名称, 英文 prompt)` — 兼容格式
+- 3 元素：`(画格名称, 英文 prompt, 审核类型)` — 推荐格式
+
+审核类型可选值：`character`, `supernatural`, `hand`, `scene`, `abstract`
 
 ```python
 PANELS = [
-    ('P01_扉页', 'Wide shot dark background, ... Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic.'),
-    ('P02_画格1_场景名', 'Close-up <角色描述> ... Manhua ink wash, ...'),
+    ('P01_扉页', 'Wide shot dark background, ... Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic.', 'scene'),
+    ('P02_画格1_场景名', 'Close-up <角色描述> ... Manhua ink wash, ...', 'character'),
 ]
-```
 
 ### Step 3: 批量生图
 ```bash
+# 正常生成（默认断点续传，跳过已有画格）
 python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py
+
+# 预览不生成
+python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py --dry-run
+
+# 强制覆盖已有画格
+python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py --force
 ```
 
 ### Step 4: 视觉审核
@@ -151,8 +167,8 @@ python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py
 python3 scripts/audit_panels.py projects/<项目名>/panels
 ```
 
-审核规则（5类）：
-- `qiyuan`：主角外貌一致性（眼镜/发型/服装）
+审核规则（5类，支持项目级 `audit_rules.yaml` 自定义）：
+- `character`：角色外貌一致性（眼镜/发型/服装）
 - `supernatural`：超自然实体（无面部/发光眼窝/半透明）
 - `hand`：手部质量（5指/无畸形）
 - `scene`：场景合规（无儿童/无无关人物）
@@ -217,7 +233,10 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 | 操作 | 命令 |
 |------|------|
+| 初始化项目 | `python3 scripts/init_project.py <项目名>` |
 | 生成画格 | `python3 scripts/generate_panels.py <分镜脚本路径>` |
+| 预览不生成 | `python3 scripts/generate_panels.py <分镜脚本路径> --dry-run` |
+| 强制覆盖 | `python3 scripts/generate_panels.py <分镜脚本路径> --force` |
 | 视觉审核 | `python3 scripts/audit_panels.py <画格目录>` |
 | 修复画格 | `python3 scripts/fix_panel.py <画格路径> "新 prompt"` |
 | 排版输出 | `python3 scripts/layout_chapter.py <排版配置>` |

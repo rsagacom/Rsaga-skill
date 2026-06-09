@@ -44,6 +44,22 @@ novel-to-comic-engine/
 
 ---
 
+## 30 秒示例
+
+```bash
+# 1. 初始化项目
+python3 scripts/init_project.py my-novel
+
+# 2. 粘贴小说到 projects/my-novel/chapter_01.md
+
+# 3. 在 Claude Code 中说：
+#    「读取 projects/my-novel/chapter_01.md，生成改编层和分镜脚本」
+
+# 4. CC 生成 storyboard 后说「开始生成画格」
+
+# 5. 生成完毕后说「排版第一章」→ 输出 PDF
+```
+
 ## 快速开始
 
 ### 1. 克隆项目

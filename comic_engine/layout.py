@@ -7,6 +7,19 @@ from reportlab.lib.pagesizes import B5
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
+from .utils import detect_platform_fonts
+
+
+def _resolve_font(config_key, default_path):
+    """解析字体路径：如果配置的路径不存在，使用平台 fallback。"""
+    if Path(default_path).exists():
+        return default_path
+    detected = detect_platform_fonts()
+    fallback = detected.get(config_key, detected.get("body", default_path))
+    if Path(fallback).exists():
+        return fallback
+    return default_path  # 最后的 fallback，会让 PIL 报明确错误
+
 
 class ComicLayoutEngine:
     def __init__(self, config):
@@ -21,9 +34,12 @@ class ComicLayoutEngine:
         self.margin = int(style.get("margin_mm", 12) * mm_to_px)
         self.gutter = int(style.get("gutter_mm", 5) * mm_to_px)
 
-        font_title = project.get("font_title", "/System/Library/Fonts/STHeiti Medium.ttc")
-        font_body = project.get("font_body", "/System/Library/Fonts/STHeiti Medium.ttc")
-        font_light = project.get("font_light", "/System/Library/Fonts/STHeiti Light.ttc")
+        font_title = _resolve_font("title", project.get("font_title",
+            "/System/Library/Fonts/STHeiti Medium.ttc"))
+        font_body = _resolve_font("body", project.get("font_body",
+            "/System/Library/Fonts/STHeiti Medium.ttc"))
+        font_light = _resolve_font("light", project.get("font_light",
+            "/System/Library/Fonts/STHeiti Light.ttc"))
 
         self.font_title = ImageFont.truetype(font_title, 80)
         self.font_bubble = ImageFont.truetype(font_body, 56)

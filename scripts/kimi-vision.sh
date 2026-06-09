@@ -19,27 +19,42 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
-python3 -c "
-import base64, json, urllib.request, sys
-with open('$IMAGE', 'rb') as f:
-    img = base64.b64encode(f.read()).decode()
+# 使用 argv 传参而非字符串插值，避免 shell 注入
+python3 - "$IMAGE" "$PROMPT" << 'PYEOF'
+import base64, json, urllib.request, sys, os
+
+image_path = sys.argv[1]
+prompt = sys.argv[2]
+api_key = os.environ.get("KIMI_API_KEY", "")
+
+with open(image_path, "rb") as f:
+    img_b64 = base64.b64encode(f.read()).decode()
+
 payload = {
-    'model': 'kimi-k2.6',
-    'messages': [{'role': 'user', 'content': [
-        {'type': 'image_url', 'image_url': {'url': f'data:image/png;base64,{img}'}},
-        {'type': 'text', 'text': '$PROMPT'}
-    ]}],
-    'max_tokens': 2000
+    "model": "kimi-k2.6",
+    "messages": [{
+        "role": "user",
+        "content": [
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}},
+            {"type": "text", "text": prompt}
+        ]
+    }],
+    "max_tokens": 2000
 }
+
 req = urllib.request.Request(
-    '$BASE_URL/chat/completions',
+    "https://api.moonshot.cn/v1/chat/completions",
     data=json.dumps(payload).encode(),
-    headers={'Authorization': 'Bearer $API_KEY', 'Content-Type': 'application/json'}
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
 )
 with urllib.request.urlopen(req, timeout=120) as resp:
     r = json.loads(resp.read())
-    if 'error' in r:
-        print(f'ERROR: {r[\"error\"]}', file=sys.stderr)
+    if "error" in r:
+        print(f"ERROR: {r['error']}", file=sys.stderr)
+        sys.exit(1)
     else:
-        print(r['choices'][0]['message']['content'])
-"
+        print(r["choices"][0]["message"]["content"])
+PYEOF

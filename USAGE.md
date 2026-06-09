@@ -373,4 +373,4 @@ python3 scripts/layout_chapter.py projects/xxx/pages_config_ch3.py
 
 ---
 
-*Last updated: 2026-06-08*
+*Last updated: 2026-06-09*

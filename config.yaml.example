@@ -51,7 +51,13 @@ style:
   margin_mm: 12
   gutter_mm: 5
 
-# 角色外貌锁定（会在每个含主角的 prompt 中嵌入）
-characters:
-  qiyuan: "Young Chinese man 25yo, thin black-frame glasses, short black hair with bangs covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, tired hollow eyes with dark circles, pale skin"
-  woman: "Woman with very long straight black hair flowing down past waist, dark trench coat, seen from behind only, NO face visible"
+# 审核规则（可选覆盖默认规则，或通过项目级 projects/<name>/audit_rules.yaml 配置）
+# audit:
+#   rules:
+#     character:
+#       description: "自定义角色审核"
+#       keywords: ["角色名"]
+#       prompt: |
+#         审核要求：检查图中角色是否符合设定。
+#         1. 发型是否为黑色短发带刘海？
+#         2. 是否佩戴细黑框眼镜？

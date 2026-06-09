@@ -8,32 +8,21 @@ from .config import get_api_key
 from .utils import encode_image_to_base64
 
 
-# 默认审核规则库
+# 默认审核规则库（通用 fallback，不含项目特定关键词）
 DEFAULT_AUDIT_RULES = {
-    "qiyuan": {
-        "keywords": ["祁思远", "主角", "男人", "青年", "男子", "地铁", "背包",
-                     "恐惧", "麻木", "习惯", "暴君", "一周", "三天", "两天",
-                     "吃饱", "意识", "噩梦", "记不住", "锁定", "丝线", "满足",
-                     "新闻", "强奸", "虐杀", "诈骗", "毒贩", "正义", "便利店",
-                     "手机", "两张脸", "锁定他们", "眼光", "罪孽", "走得慢",
-                     "寒意", "少管所", "捂住", "倒在", "喊不", "三分钟", "咽气",
-                     "法医", "半年", "两百", "行刑者", "城中村", "电脑", "论坛",
-                     "12月", "呼唤", "死寂", "存在感", "勾勒", "等了一", "恐慌",
-                     "困惑", "庆幸", "投简历", "小公司", "地铁", "领导", "站着",
-                     "回来了", "留白"],
-        "prompt": """审核要求：检查图中男子是否符合角色设定。
-角色设定：Young Chinese man 25yo, thin black-frame glasses, short black hair with bangs covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, tired hollow eyes with dark circles, pale skin.
-
+    "character": {
+        "description": "角色外貌一致性",
+        "prompt": """审核要求：检查图中角色是否符合描述。
 请逐一检查：
-1. 发型是否为黑色短发带刘海？
-2. 是否佩戴细黑框眼镜？
-3. 服装是否为米色休闲西装+深蓝色V领衬衫？
+1. 发型、发色是否与描述一致？
+2. 是否佩戴指定眼镜？
+3. 服装是否与描述一致？
 4. 画面是否出现重影/叠加/双重人像？
 
 只输出发现的问题，每条一行，格式：「问题类型：具体描述」。如无问题，输出「通过」。"""
     },
     "supernatural": {
-        "keywords": ["贪婪", "吃饱", "意识", "眼光", "罪孽", "走得慢", "租客", "房东", "实体"],
+        "description": "超自然实体",
         "prompt": """审核要求：检查超自然实体。
 
 1. 是否只有发光眼窝，无完整人脸？
@@ -44,7 +33,7 @@ DEFAULT_AUDIT_RULES = {
 只输出发现的问题。如无问题，输出「通过」。"""
     },
     "hand": {
-        "keywords": ["手", "手指", "攥", "手掌"],
+        "description": "手部绘制质量",
         "prompt": """审核要求：检查手部绘制质量。
 
 1. 手指数量是否为5根？
@@ -54,7 +43,7 @@ DEFAULT_AUDIT_RULES = {
 只输出发现的问题。如无问题，输出「通过」。"""
     },
     "scene": {
-        "keywords": ["扉页", "少管所", "法医", "城中村", "电脑", "论坛", "12月", "地铁", "领导", "留白"],
+        "description": "场景合规",
         "prompt": """审核要求：检查场景合规。
 
 1. 是否有不应出现的儿童？
@@ -64,7 +53,7 @@ DEFAULT_AUDIT_RULES = {
 只输出发现的问题。如无问题，输出「通过」。"""
     },
     "abstract": {
-        "keywords": ["抽象", "暴君", "吃饱", "意识", "两百", "留白", "记不住"],
+        "description": "抽象/隐喻画面",
         "prompt": """审核要求：检查抽象/隐喻画面。
 
 1. 是否出现人物重影/叠加？
@@ -76,14 +65,133 @@ DEFAULT_AUDIT_RULES = {
 }
 
 
-def classify_panel(name, rules=None):
-    """根据文件名分类画格审核类型"""
+def load_audit_rules(config=None, project_dir=None):
+    """加载审核规则（按优先级合并）。
+
+    优先级: 项目 audit_rules.yaml > config.yaml audit.rules > DEFAULT_AUDIT_RULES
+
+    Args:
+        config: loaded config dict (optional)
+        project_dir: project directory Path (optional), checks audit_rules.yaml
+
+    Returns:
+        dict of audit rules
+    """
+    import os
+
+    rules = dict(DEFAULT_AUDIT_RULES)  # shallow copy
+
+    # 从 config.yaml 加载
+    if config:
+        custom = config.get("audit", {}).get("rules", {})
+        if isinstance(custom, dict):
+            rules.update(custom)
+
+    # 从项目级 audit_rules.yaml 加载（最高优先级）
+    if project_dir:
+        rules_path = Path(project_dir) / "audit_rules.yaml"
+        if rules_path.exists():
+            try:
+                import yaml
+                with open(rules_path, "r", encoding="utf-8") as f:
+                    project_rules = yaml.safe_load(f)
+                if isinstance(project_rules, dict):
+                    rules.update(project_rules)
+            except ImportError:
+                # 无 PyYAML 时用简单解析
+                project_rules = _parse_simple_audit_yaml(rules_path)
+                if project_rules:
+                    rules.update(project_rules)
+
+    return rules
+
+
+def _parse_simple_audit_yaml(path):
+    """极简 audit_rules.yaml 解析（无 PyYAML fallback）"""
+    result = {}
+    current_type = None
+    current_rule = {}
+    in_prompt = False
+    prompt_lines = []
+
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            raw = line.rstrip()
+            # 跳过空行和注释
+            if not raw or raw.strip().startswith("#"):
+                continue
+
+            # 检测是否在 prompt 多行字符串内
+            if in_prompt:
+                if raw.startswith("    "):
+                    prompt_lines.append(raw.strip())
+                    continue
+                else:
+                    current_rule["prompt"] = "\n".join(prompt_lines)
+                    prompt_lines = []
+                    in_prompt = False
+                    # 保存规则
+                    if current_type and current_rule:
+                        result[current_type] = current_rule
+                        current_rule = {}
+
+            # 顶级 key（审核类型）
+            if raw.endswith(":") and not raw.startswith(" "):
+                if current_type and current_rule:
+                    result[current_type] = current_rule
+                current_type = raw[:-1]
+                current_rule = {}
+                continue
+
+            # 子字段
+            if ":" in raw and raw.startswith("  ") and not raw.startswith("    "):
+                k, v = raw.split(":", 1)
+                k = k.strip()
+                v = v.strip().strip('"').strip("'")
+                if k == "prompt" and (v == "|" or v == ">"):
+                    in_prompt = True
+                    prompt_lines = []
+                else:
+                    current_rule[k] = v
+
+    # 处理最后一个
+    if in_prompt and prompt_lines:
+        current_rule["prompt"] = "\n".join(prompt_lines)
+    if current_type and current_rule:
+        result[current_type] = current_rule
+
+    return result
+
+
+def classify_panel(name, audit_type=None, rules=None):
+    """分类画格审核类型。
+
+    优先级:
+    1. 显式 audit_type 参数（来自 PANELS 元组的第 3 元素）
+    2. 关键词匹配（向后兼容旧格式）
+    3. 默认 "scene"
+
+    Args:
+        name: 画格名称
+        audit_type: 显式审核类型（可选）
+        rules: 审核规则 dict，用于关键词匹配
+
+    Returns:
+        str: 审核类型
+    """
+    if audit_type:
+        return audit_type
+
     if rules is None:
         rules = DEFAULT_AUDIT_RULES
-    for audit_type, rule in rules.items():
-        for kw in rule["keywords"]:
+
+    # 向后兼容：关键词匹配
+    for rule_type, rule in rules.items():
+        keywords = rule.get("keywords", [])
+        for kw in keywords:
             if kw in name:
-                return audit_type
+                return rule_type
+
     return "scene"
 
 
@@ -125,7 +233,7 @@ def audit_panels(panels_dir, config, rules=None, sleep_seconds=1.5):
     Args:
         panels_dir: Path to panels directory
         config: loaded config dict
-        rules: custom audit rules dict (optional)
+        rules: custom audit rules dict (optional, 优先级高于 config 中加载的)
 
     Returns:
         list of audit result dicts
@@ -148,7 +256,8 @@ def audit_panels(panels_dir, config, rules=None, sleep_seconds=1.5):
         raise ValueError(f"未配置 {provider_name} 的 API key")
 
     if rules is None:
-        rules = DEFAULT_AUDIT_RULES
+        # 尝试从 config 加载 rules，fallback 到 DEFAULT
+        rules = load_audit_rules(config, panels_dir.parent)
 
     results = []
     print(f"\n{'='*60}")
@@ -157,8 +266,9 @@ def audit_panels(panels_dir, config, rules=None, sleep_seconds=1.5):
 
     for i, panel_path in enumerate(panels, 1):
         name = panel_path.stem
-        audit_type = classify_panel(name, rules)
-        prompt = rules[audit_type]["prompt"]
+        audit_type = classify_panel(name, rules=rules)
+        rule = rules.get(audit_type, rules.get("scene", {}))
+        prompt = rule.get("prompt", "描述这张图片的内容和问题")
         print(f"  [{i:2d}/{len(panels)}] {name:35s} ({audit_type:12s}) ... ", end="", flush=True)
 
         try:
