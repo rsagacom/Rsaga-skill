@@ -1,7 +1,7 @@
 ---
 name: novel-to-comic
 description: 小说转漫画引擎 - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1-2句/格粒度控制）、逐句解析分镜、批量生图、多模态视觉审核、自动修复问题画格、排版输出 PDF。
-version: 0.3.0
+version: 0.4.0
 metadata:
   working_dir: .
   requires:
@@ -241,3 +241,7 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 | 修复画格 | `python3 scripts/fix_panel.py <画格路径> "新 prompt"` |
 | 排版输出 | `python3 scripts/layout_chapter.py <排版配置>` |
 | 审核报告 | `python3 scripts/audit_panels.py <画格目录> --output report.md` |
+
+---
+
+*最后更新: 2026-06-11*
