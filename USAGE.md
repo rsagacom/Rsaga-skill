@@ -67,7 +67,7 @@ Step 2  生成分镜脚本（PANELS 列表）
         ↓
 Step 3  批量生成画格（step-image-edit-2）
         ↓
-Step 4  视觉审核（step-3.7-flash / kimi-k2.6）
+Step 4  视觉审核（kimi-k2.6）
         ↓
 Step 5  修复问题画格
         ↓

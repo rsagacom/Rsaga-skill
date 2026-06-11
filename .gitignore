@@ -36,6 +36,16 @@ wheels/
 *_gen.py
 *_run_generate.py
 run_gen.py
+_fix_*.py
+_layout_*.py
+_step37_*.py
+_step37_*.txt
+_ds_adapter_*.md
+_ds_output_*.txt
+adaptation_ch*.md
+
+# Python cache
+__pycache__/
 
 # macOS
 .DS_Store

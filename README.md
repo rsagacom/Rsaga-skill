@@ -10,7 +10,7 @@
 
 - **小说逐句解析**：不预设分镜数量，每个视觉/情绪转折独立成格
 - **角色一致性控制**：精简角色描述嵌入每个 prompt
-- **多模态视觉审核**：Step 3.7 Flash + Kimi K2.6 双模型审核
+- **多模态视觉审核**：Kimi K2.6 视觉审核
 - **自动修复问题画格**：根据审核结果自动重新生成
 - **漫画排版输出**：B5判 @ 150dpi，手绘边框、对白气泡、旁白条
 - **Claude Code Skill 集成**：通过自然语言交互完成分镜规划和修改
@@ -60,6 +60,30 @@ python3 scripts/init_project.py my-novel
 # 5. 生成完毕后说「排版第一章」→ 输出 PDF
 ```
 
+## 模型分工建议
+
+| 步骤 | 用什么 | 不用什么 | 为什么 |
+|------|-------|---------|--------|
+| 改编层（拆格子） | **DS v4 Pro** | Kimi / Step | DS 文本理解最细，逐句不漏；Kimi 可能漏句子 |
+| 分镜提示词 | **Kimi K2.6** ⭐ | DS v4 / Step 3.7 | Kimi 视觉构图和情绪渲染最强；DS 不懂 POV |
+| 生图 | StepFun step-image-edit-2 | — | 速度稳定，支持中文 prompt |
+| 视觉审核 | Kimi K2.6 | — | 多模态检查角色/手部/异常 |
+
+### 为什么分镜不能用 DS v4 Pro
+- DS v4 Pro 会把 **所有格子都塞入主角**，包括纯场景和 POV 镜头
+- 让它判断"第一视角 vs 第三人称"，准确率 0%
+- **用规则引擎分类**（场景关键词匹配），不要让任何模型做 POV 判断
+
+### 为什么用中文 prompt
+- step-image-edit-2 硬上限 ~400 字符，英文不够写
+- 中文信息密度是英文 3x：`戴细黑框眼镜` vs `thin black-frame glasses`
+- 风格词 + 角色描述 + 场景情绪全部塞进去仍有富余
+
+### 风格词不要砍
+- 风格词必须放在 prompt **最前面**（不是末尾），先锁定画风
+- 不能为了凑字符限制而缩写风格词，缩写后模型回归真人照片
+- 推荐：`东亚漫画风格，黑白水墨，网点阴影，G笔线条，高对比度灰度，纯二维手绘插图，不要照片，不要CGI，不要3D渲染`
+
 ## 快速开始
 
 ### 1. 克隆项目
@@ -78,8 +102,7 @@ cp config.yaml.example config.yaml
 
 支持的模型：
 - **生图**：阶跃星辰 Step Image Edit 2（推荐）
-- **审核主模型**：阶跃星辰 Step 3.7 Flash
-- **审核备用模型**：Kimi K2.6
+- **视觉审核**：Kimi K2.6
 
 ### 3. 安装 Claude Code skill
 
@@ -168,7 +191,7 @@ style:
   ↓
 [scripts/generate_panels.py] 调用 Step API 批量生图
   ↓
-[scripts/audit_panels.py] Step 3.7 Flash / Kimi 视觉审核
+[scripts/audit_panels.py] Kimi 视觉审核
   ↓
 [scripts/fix_panel.py] 修复问题画格
   ↓
