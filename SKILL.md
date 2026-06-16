@@ -1,7 +1,7 @@
 ---
 name: novel-to-comic
-description: 小说转漫画引擎 - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1-2句/格粒度控制）、逐句解析分镜、批量生图、多模态视觉审核、自动修复问题画格、排版输出 PDF。
-version: 0.4.0
+description: 小说转漫画引擎 - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1句=1格粒度控制）、Kimi K2.7 编剧+分镜+配文全流程、Step Image Edit 2 批量生图、多模态视觉审核、自动修复问题画格、排版输出 PDF。
+version: 0.5.0
 metadata:
   working_dir: .
   requires:
@@ -17,21 +17,22 @@ metadata:
 ## 工作流程
 
 ```
-小说原文 → 改编层 → 分镜脚本 → 批量生图 → 视觉审核 → 修复问题 → 排版输出 PDF
+小说原文 → Kimi K2.7 编剧（改编层） → Kimi K2.7 分镜脚本 → Step Image Edit 2 批量生图 → 视觉审查 → Kimi 配文排版 → PDF 输出
 ```
 
-### Step 0: 初始化项目（首次）
+### Step 0: 准备工作
+
 ```bash
-python3 scripts/init_project.py <项目名>
+# 启动本地多模态网关（API key 统一管理，不经过 CC）
+python3 scripts/mm-gateway.py
 ```
-自动创建项目目录结构、章节模板、分镜模板、排版配置模板。
 
 ### Step 1: 读取小说
 读取 `projects/<项目名>/chapter_XX.md`，理解剧情结构、角色、情绪转折。
 
-### Step 1.5: 改编层（⚠️ 关键，不可跳过）
+### Step 1.5: 改编层（Kimi K2.7 编剧，⚠️ 关键，不可跳过）
 
-**这是漫画编剧步骤，不是简单的文本截取。**
+**这是漫画编剧步骤，由 Kimi K2.7 执行。**
 
 在生成分镜脚本之前，必须先产出 `projects/<项目名>/adaptation_chXX.md`，包含：
 - 选取的小说原文段落（标注来源行号）
@@ -96,20 +97,18 @@ python3 scripts/init_project.py <项目名>
 - [ ] **粒度检查**：没有旁白条目覆盖超过 2 句原文？
 - [ ] **粒度检查**：每一句话都有对应的画格？
 
-#### 约束三：画格粒度（1-2 句 = 1 格）
+#### 核心约束：1 句原文 = 1 格画面（v0.5 改进）
 
-这是最重要的节奏约束，防止剧情跳跃。
+这是最重要的节奏约束，每句原文独立成格。
 
 | 规则 | 说明 |
 |------|------|
-| **每 1-2 句小说原文 = 1 个改编条目 = 1 格画面** | 不允许将超过 2 句的原文合并到同一个旁白条目里；也不允许 1 句原文拆成 3 格 |
-| **旁白条目数 ≥ 原文句子数 ÷ 2** | 改编后的旁白条目数，必须不少于原文句子总数的一半 |
-| **一句话一个画面** | 如果某句话含有独立视觉信息（动作、表情、场景变化），必须独立成格，不能和后一句合并 |
-| **对话逐句独立** | 每句对白（含说话人动作）独立成格，不允许把两句对白合并到同一个画面 |
-| **情绪描写独立成格** | 包含情绪关键词（恐惧/麻木/愤怒/绝望等）的句子，必须独立成格 |
-| **不合并跨段落的句子** | 不同段落之间的句子，即使语义相关，也不允许合并到同一个旁白条目 |
+| **每 1 句小说原文 = 1 个改编条目 = 1 格画面** | 不允许合并超过 1 句的原文到同一个旁白条目里 |
+| **旁白条目数 = 原文句子数** | 改编后的旁白条目数必须等于原文句子总数 |
+| **对话逐句独立** | 每句对白（含说话人动作）独立成格 |
+| **不合并跨段落的句子** | 不同段落之间的句子，即使语义相关，也不允许合并 |
 
-**示例**：
+**示例（v0.5 标准）**：
 
 ```
 原文（3句）：
@@ -117,7 +116,7 @@ python3 scripts/init_project.py <项目名>
   店里热气腾腾，人声鼎沸。
   终于又像个正常人了。
 
-改编旁白（3条 = 3格）：
+改编旁白（3条 = 3格，1句1格）：
   1. "他坐在靠窗的位置，涮着羊肉。" → 1格（人物动作）
   2. "店里热气腾腾，人声鼎沸，锅底咕嘟咕嘟地冒着泡。" → 1格（环境氛围）
   3. "终于又像个正常人了。" → 1格（内心/表情特写）
@@ -130,62 +129,64 @@ python3 scripts/init_project.py <项目名>
   → 这是3句话的信息塞进1格，违反了 1-2句=1格 的规则
 ```
 
-**改编层自检（新增粒度检查）**：
-- 改编旁白条目数 / 原文句子数 ≥ 0.5 吗？
-- 是否有任何旁白条目覆盖了超过 2 句原文？
-- 每一句话都有对应的画格吗？（不允许一句原文没有画面）
+**改编层自检（v0.5）**：
+- 改编旁白条目数 = 原文句子数？（必须是 1:1）
+- 是否有任何旁白条目覆盖了超过 1 句原文？
+- 每一句话都有对应的画格吗？
 
-### Step 2: 生成分镜脚本
-基于改编层（`adaptation_chXX.md`）生成分镜脚本，创建 `projects/<项目名>/storyboard_chXX.py`。
+### Step 2: 生成分镜脚本（Kimi K2.7）
+基于改编层生成分镜脚本 `storyboard_chXX.py`。
 
-每个元素为元组：
-- 2 元素：`(画格名称, 英文 prompt)` — 兼容格式
-- 3 元素：`(画格名称, 英文 prompt, 审核类型)` — 推荐格式
+**模型：Kimi K2.7** — 画面感强，英文 prompt 精准。
 
-审核类型可选值：`character`, `supernatural`, `hand`, `scene`, `abstract`
+⚠️ **重要**：Python f-string 中必须使用 `{Q}` 和 `{S}`，不能写成 `Q,` 或 `S,`
 
 ```python
+# 分镜脚本模板
+Q = "Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, tired hollow eyes with dark circles, pale skin."
+S = "Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
+
 PANELS = [
-    ('P01_扉页', 'Wide shot dark background, ... Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic.', 'scene'),
-    ('P02_画格1_场景名', 'Close-up <角色描述> ... Manhua ink wash, ...', 'character'),
+    ("P001", f"{Q}, standing before mirror, hollow eyes, {S}", "character"),
+    ("P002", f"Subway interior, {Q} gripping rail, {S}", "scene"),
 ]
+```
 
 ### Step 3: 批量生图
 ```bash
-# 正常生成（默认断点续传，跳过已有画格）
 python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py
-
-# 预览不生成
-python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py --dry-run
-
-# 强制覆盖已有画格
-python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py --force
 ```
 
-### Step 4: 视觉审核
+**模型：Step Image Edit 2**（通过本地 mm-gateway 调用）
+
+- 默认断点续传（跳过已有画格）
+- `--concurrent N`：并发 N 路（默认串行）
+- `--dry-run`：预览不生成
+- `--force`：强制覆盖已有画格
+
+### Step 4: 视觉审查
 ```bash
-python3 scripts/audit_panels.py projects/<项目名>/panels
+python3 scripts/scan_all_panels.py projects/<项目名>/panels
 ```
 
-审核规则（5类，支持项目级 `audit_rules.yaml` 自定义）：
-- `character`：角色外貌一致性（眼镜/发型/服装）
-- `supernatural`：超自然实体（无面部/发光眼窝/半透明）
-- `hand`：手部质量（5指/无畸形）
-- `scene`：场景合规（无儿童/无无关人物）
-- `abstract`：抽象画面（无双影/无撕裂）
+**模型：Step 3.7 Flash 识图**（降级方案）
+**首选：Kimi K2.7 识图**（有额度时）
+
+逐格扫描实际画面内容，输出 panel_descriptions.json 用于后续配文匹配。
 
 ### Step 5: 修复问题画格
 ```bash
-python3 scripts/fix_panel.py projects/<项目名>/panels/PXX_名称.png "修正后的 prompt"
+python3 scripts/fix_panel.py projects/<项目名>/panels/P001.png "修正后的 prompt"
 ```
 
-### Step 6: 排版输出
-1. 创建 `projects/<项目名>/pages_config_chXX.py`，定义 `PAGES` 和 `BUBBLE_CONFIG`
-2. 运行排版脚本输出 PNG 页面 + PDF
+### Step 6: 配文 + 排版（Kimi K2.7）
+Kimi K2.7 根据实际画面描述和旁白列表，生成 `pages_config_chXX.py`（含 PAGES 和 BUBBLE_CONFIG）。
 
 ```bash
 python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 ```
+
+输出：PNG 页面 + B5判 PDF。
 
 ## Prompt 规范
 
@@ -194,26 +195,26 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
    Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic.
    ```
 
-2. **主角外貌**（精简嵌入，<60 词）：
+2. **角色外貌描述模板（固定，不可修改）**：
    ```
-   Young Chinese man 25yo, thin black-frame glasses, short black hair with bangs,
+   Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs,
    beige casual blazer, dark blue V-neck shirt, old black backpack,
    tired hollow eyes with dark circles, pale skin.
    ```
+   ⚠️ 眼镜用 `thin wire-rim`（不用 `black-frame`，模型容易生粗框）
 
 3. **超自然实体约束**：
-   - `NO facial features`, `NO mouth, NO nose`
-   - `ONLY empty glowing cyan eye sockets`
-   - `semi-transparent shadowy form`, `edges dissolving into smoke`
+   - `ONLY empty glowing cyan eye sockets, NO facial features, NO mouth, NO nose, NO teeth`
+   - `semi-transparent shadowy form, edges dissolving into smoke`
 
 4. **场景安全**：
    - 空旷场景：`NO people, NO crowd`
    - 废弃儿童设施：`NO children`
    - 手部特写：`simple normal hand shape, five fingers`
 
-5. **情绪嵌入**：
-   - 恐怖/紧张：`fear`, `panic`, `terror`, `despair`
-   - 平静/日常：`melancholic`, `exhausted`, `detached`
+5. **f-string 变量替换规则**：
+   - 必须使用 `{Q}` 和 `{S}`，不能写成 `Q,` 或 `S,`
+   - `generate_panels.py` 在运行时自动替换 `{Q}` 和 `{S}` 为实际值
 
 ## 排版规范
 
@@ -244,4 +245,16 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 ---
 
-*最后更新: 2026-06-11*
+*最后更新: 2026-06-16*
+
+---
+
+## 版本历史
+
+| 版本 | 日期 | 变更 |
+|------|------|------|
+| **v0.5.0** | 2026-06-16 | Kimi K2.7 全流程（编剧+分镜+配文），1句=1格粒度，{Q}/{S} 自动替换，角色描述固定模板，超自然实体硬约束，视觉审查降级机制 |
+| v0.4.0 | 2026-06-11 | 5种新布局类型，DS v4 Pro 改编层模板，合并脚本 |
+| v0.3.0 | 2026-06-08 | 第四章排版，补全缺失旁白 |
+| v0.2.0 | 2026-06-07 | 视觉审核模块，自动修复，v7 CHECKLIST |
+| v0.1.0 | 2026-06-04 | 初版：改编层→分镜→生图→排版→PDF

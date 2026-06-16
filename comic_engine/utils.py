@@ -44,6 +44,8 @@ def load_storyboard(path):
         [(name, prompt), ...]          — 2 元素
         [(name, prompt, audit_type), ...]  — 3 元素（推荐）
 
+    自动替换 prompt 中的 {Q} 和 {S} 为模块中定义的 Q 和 S 变量。
+
     Returns:
         list of tuples
     """
@@ -52,6 +54,8 @@ def load_storyboard(path):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     panels = getattr(mod, "PANELS", [])
+    q_val = getattr(mod, "Q", None)
+    s_val = getattr(mod, "S", None)
     # 向后兼容：2 元素格式填充为 3 元素
     normalized = []
     for item in panels:
@@ -61,6 +65,14 @@ def load_storyboard(path):
             normalized.append((item[0], item[1], item[2]))
         else:
             raise ValueError(f"PANELS 格式错误: {item}，需要至少 (name, prompt)")
+        # 替换 {Q} 和 {S}
+        p = normalized[-1]
+        prompt = p[1]
+        if q_val and "{Q}" in prompt:
+            prompt = prompt.replace("{Q}", q_val)
+        if s_val and "{S}" in prompt:
+            prompt = prompt.replace("{S}", s_val)
+        normalized[-1] = (p[0], prompt, p[2])
     return normalized
 
 
