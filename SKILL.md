@@ -146,8 +146,8 @@ python3 scripts/mm-gateway.py
 ⚠️ **回忆场景年龄**：回忆/闪回中的角色必须标注当时的年龄（如 `young boy version of {Q}, age 7-8`），不能用成年版 `{Q}`，否则模型会画出成年人在童年场景中。
 
 ```python
-# 分镜脚本模板
-Q = "Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, tired hollow eyes with dark circles, pale skin."
+# 分镜脚本模板（中文prompt，信息密度高，不超过250字）
+Q = "东亚青年，25岁，细金属框眼镜，黑色短发齐刘海，米色休闲西装，深蓝色V领衬衫，旧黑色双肩背包，疲惫空洞的眼神，黑眼圈，苍白皮肤。"
 S = "Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
 
 PANELS = [
@@ -194,18 +194,22 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 ## Prompt 规范
 
-1. **画风后缀**（所有 prompt 必须以固定后缀结尾）：
+1. **画风后缀**（固定）：
    ```
-   Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic.
+   东亚漫画，黑白水墨，G笔线条，高对比度灰度，写实风格。
    ```
 
-2. **角色外貌描述模板（固定，不可修改）**：
+2. **角色外貌描述模板（固定，不可修改，中文）**：
    ```
-   Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs,
-   beige casual blazer, dark blue V-neck shirt, old black backpack,
-   tired hollow eyes with dark circles, pale skin.
+   东亚青年，25岁，细金属框眼镜，黑色短发齐刘海，
+   米色休闲西装，深蓝色V领衬衫，旧黑色双肩背包，
+   疲惫空洞的眼神，黑眼圈，苍白皮肤。
    ```
-   ⚠️ 眼镜用 `thin wire-rim`（不用 `black-frame`，模型容易生粗框）
+
+3. **中文 prompt 规则**：
+   - 全部用中文写，信息密度高，Step 模型理解精准
+   - 不超过 250 字（超出会触发 API 限制）
+   - 关键视觉元素 + 构图 + 情绪标注
 
 3. **超自然实体约束**：
    - `ONLY empty glowing cyan eye sockets, NO facial features, NO mouth, NO nose, NO teeth`

@@ -86,8 +86,8 @@ abstract → 抽象/隐喻画面
 
 规则：
 1. 每一条改编条目 → 1 个画格
-2. prompt 用英文，嵌入 {Q} 和 {S}
-3. prompt 包含关键视觉元素、构图、氛围
+2. prompt 用**中文**（信息密度高，Step 模型中文理解精准），嵌入 {Q} 和 {S}
+3. prompt 不超过 250 字，包含关键视觉元素、构图、氛围
 4. 审核类型从改编条目末尾提取
 5. 严格输出纯 Python 代码，不要 markdown 包裹
 
@@ -140,9 +140,9 @@ P030: {Q}, pinned in a sandpit, bullies pouring sand into his mouth, {S}
 
 ```python
 Q = (
-    "Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs "
-    "covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, "
-    "tired hollow eyes with dark circles, pale skin."
+    "东亚青年，25岁，细金属框眼镜，黑色短发齐刘海，"
+    "米色休闲西装，深蓝色V领衬衫，旧黑色双肩背包，"
+    "疲惫空洞的眼神，黑眼圈，苍白皮肤。"
 )
 ```
 

@@ -3,7 +3,7 @@
 批量生图 — 基于 storyboard_chXX.py 生成画格
 模型：Step Image Edit 2（通过本地 mm-gateway 调用）
 """
-import os, json, time, sys, pathlib, importlib.util, base64, argparse, urllib.request
+import os, json, time, sys, pathlib, importlib.util, base64, argparse, urllib.request, re
 
 GATEWAY = "http://127.0.0.1:11939/image/generate"
 SIZE = "1024x1024"
@@ -20,13 +20,69 @@ def load_storyboard(path):
     for p in mod.PANELS:
         pid, prompt = p[0], p[1]
         atype = p[2] if len(p) > 2 else "unknown"
-        # 替换 {Q} 和 {S} 为实际值
         if hasattr(mod, 'Q') and '{Q}' in prompt:
             prompt = prompt.replace('{Q}', mod.Q)
         if hasattr(mod, 'S') and '{S}' in prompt:
             prompt = prompt.replace('{S}', mod.S)
         panels.append((pid, prompt, atype))
     return panels
+
+
+# ─── 逻辑检测规则库 ───────────────────────────────────────
+LOGIC_RULES = [
+    # 医疗场景：主角不应戴氧气面罩/呼吸机/病号服
+    ("氧气面罩|氧氣面罩|呼吸机|呼吸機|氧氣罩", [
+        ("{Q}|主角|男人|男子|青年", "主角自己戴面罩", "主角不应戴氧气面罩，是病人在戴。应写：老人戴氧气面罩，主角站在旁边"),
+    ]),
+    # 回忆场景：成年人不该在童年场景
+    ("7岁|8岁|童年|小时候|小孩|沙坑|滑梯|楼道|灌沙|灌沙子|被欺负", [
+        ("25yo|adult|man|beige|blazer|beard|肌肉|皱纹", "成年人出现在童年场景", "童年场景应使用 young boy version of {Q}, age 7-8"),
+    ]),
+    # 女性角色：避免男性特征
+    ("女人|女性|女子|长发|背影|风衣", [
+        ("trench coat|silhouette alone|figure|dark silhouette", "女性剪影缺少女特征", "应加 female silhouette, long black hair, seen from behind, NO face visible"),
+    ]),
+    # 超自然实体：不应有五官
+    ("超自然|租客|发光眼窝|glowing.*eye|幽绿", [
+        ("face|nose|mouth|teeth|smile|grin|laugh|cry|skin|cheek|chin|jaw|eyebrow|lip", "超自然实体有五官", "应加 ONLY empty glowing cyan eye sockets, NO facial features, NO mouth, NO nose, NO teeth"),
+    ]),
+    # 医院场景：主角不是病人
+    ("医院|ICU|重症|病床|病房|老人|抢救|急救", [
+        ("gown|patient|bedridden|wheelchair|病床|躺|输液|病号服", "主角被描述为病人", "主角是访客站在床边，不是病人"),
+    ]),
+    # 尸体/死亡：不应活过来
+    ("尸体|猝死|死亡|死去|栽倒|倒在地上", [
+        ("stand up|walk|open eyes|breathe|move|爬起来|站起来|睁眼", "尸体在动", "尸体应保持静止不动"),
+    ]),
+    # 中文 prompt 长度限制
+    (".*", [
+        ("^.{250,}", "prompt过长", "中文prompt应控制在250字以内，避免触发API限制"),
+    ]),
+]
+
+
+def check_prompt_logic(pid, prompt, atype):
+    """对单条 prompt 进行逻辑检测，返回问题列表"""
+    issues = []
+    prompt_lower = prompt.lower()
+    for pattern, checks in LOGIC_RULES:
+        if re.search(pattern, prompt_lower):
+            for keyword, label, suggestion in checks:
+                if re.search(keyword, prompt_lower):
+                    issues.append(f"{label} → {suggestion}")
+    return issues
+
+
+def validate_all_panels(panels):
+    """检测所有 prompt 的逻辑问题，严重问题阻止生图"""
+    all_issues = []
+    for pid, prompt, atype in panels:
+        issues = check_prompt_logic(pid, prompt, atype)
+        if issues:
+            for iss in issues:
+                print(f"  ⚠️  [{pid}] {iss}")
+                all_issues.append((pid, iss))
+    return all_issues
 
 
 def generate_panel(panel_id, prompt, out_dir, force=False):
@@ -85,6 +141,16 @@ def main():
 
     print(f"📖 加载分镜脚本: {args.storyboard}")
     panels = load_storyboard(args.storyboard)
+
+    # 🔥 逻辑检测：生图前拦截不合逻辑的 prompt
+    print(f"\n🔍 逻辑检测中...")
+    issues = validate_all_panels(panels)
+    if issues:
+        print(f"\n❌ 发现 {len(issues)} 个逻辑问题，请修正后重试：")
+        for pid, iss in issues:
+            print(f"    {pid}: {iss}")
+        sys.exit(1)
+    print(f"  ✅ 全部通过\n")
 
     if args.out:
         out_dir = pathlib.Path(args.out)
