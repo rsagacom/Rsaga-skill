@@ -7,7 +7,7 @@ from reportlab.lib.pagesizes import B5
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
-from .utils import detect_platform_fonts
+from .utils import detect_platform_fonts, load_storyboard
 
 
 def _resolve_font(config_key, default_path):
@@ -346,6 +346,87 @@ class ComicLayoutEngine:
             tx = x1 + (x2 - x1 - lw) // 2
             draw.text((tx, ty), line, fill=self.c_white, font=self.font_small)
             ty += line_h
+
+    def suggest_auto_layout(self, storyboard_path=None, panels_list=None, panel_types=None):
+        """根据画格类型和剧情节奏自动推荐排版布局
+
+        核心规则：
+        - 关键剧情时刻（supernatural/emotional peak）→ full 全页大格
+        - 情绪递进序列（连续 character 同情绪单元）→ triple-row 或 hero
+        - 动作/死亡场景 → hero 上大下二
+        - 对话/日常 → 2x2 标准四格
+        - 超自然实体首次出现 → full 全页
+
+        返回：PAGES 列表 [(layout_name, [panel_names]), ...]
+        """
+        if panel_types is None and storyboard_path:
+            panels = load_storyboard(storyboard_path)
+            panel_types = {}
+            for pid, prompt, atype in panels:
+                panel_types[pid] = atype
+
+        if panel_types is None and panels_list:
+            panel_types = {}
+            for pid, prompt, atype in panels_list:
+                panel_types[pid] = atype
+
+        if not panel_types:
+            return []
+
+        # 按叙事顺序排列的 panel_id 列表
+        sorted_pids = sorted(panel_types.keys(), key=lambda x: int(x.replace("P", "")))
+
+        pages = []
+        i = 0
+        while i < len(sorted_pids):
+            pid = sorted_pids[i]
+            atype = panel_types.get(pid, "scene")
+            pid_num = int(pid.replace("P", ""))
+
+            # 规则1：超自然实体首次出现 → full 全页
+            if atype == "supernatural" and self._is_first_of_type(pid, "supernatural", sorted_pids, panel_types):
+                pages.append(("full", [pid]))
+                i += 1
+                continue
+
+            # 规则2：连续 character 情绪递进（同一情绪高潮）→ hero 或 triple-row
+            next_pids = sorted_pids[i:i+5]
+            char_count = sum(1 for p in next_pids if panel_types.get(p) == "character")
+            if char_count >= 3 and atype == "character":
+                # 取连续3个 character 格用 hero 布局
+                batch = []
+                for j in range(i, min(i+3, len(sorted_pids))):
+                    batch.append(sorted_pids[j])
+                pages.append(("hero", batch))
+                i += len(batch)
+                continue
+
+            # 规则3：abstract 关键画面 → full
+            if atype == "abstract" and pid_num in [11, 26, 29, 37, 39, 60, 65, 89, 98, 111]:
+                pages.append(("full", [pid]))
+                i += 1
+                continue
+
+            # 规则4：剩余格按 2x2 打包
+            batch = sorted_pids[i:min(i+4, len(sorted_pids))]
+            if len(batch) == 1:
+                pages.append(("full", batch))
+            elif len(batch) == 2:
+                pages.append(("1x2", batch))
+            elif len(batch) == 3:
+                pages.append(("hero", batch))
+            else:
+                pages.append(("2x2", batch))
+            i += len(batch)
+
+        return pages
+
+    def _is_first_of_type(self, pid, atype, sorted_pids, panel_types):
+        """检查该画格是否是某种类型的首次出现"""
+        for p in sorted_pids:
+            if panel_types.get(p) == atype:
+                return p == pid
+        return False
 
     def render_pages(self, pages_config, bubble_config, input_dir, output_dir):
         """渲染所有页面

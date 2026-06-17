@@ -28,6 +28,14 @@ def load_storyboard(path):
     return panels
 
 
+def _has_chinese_face_word(text):
+    """检测中文prompt中是否包含人脸/五官词"""
+    chinese_face = ["脸", "鼻", "嘴", "牙齿", "笑容", "皮肤", "眉毛", "眼珠", "光头"]
+    for word in chinese_face:
+        if word in text:
+            return True
+    return False
+
 # ─── 逻辑检测规则库 ───────────────────────────────────────
 LOGIC_RULES = [
     # 医疗场景：主角不应戴氧气面罩/呼吸机/病号服
@@ -42,9 +50,9 @@ LOGIC_RULES = [
     ("女人|女性|女子|长发|背影|风衣", [
         ("trench coat|silhouette alone|figure|dark silhouette", "女性剪影缺少女特征", "应加 female silhouette, long black hair, seen from behind, NO face visible"),
     ]),
-    # 超自然实体：不应有五官
-    ("超自然|租客|发光眼窝|glowing.*eye|幽绿", [
-        ("face|nose|mouth|teeth|smile|grin|laugh|cry|skin|cheek|chin|jaw|eyebrow|lip", "超自然实体有五官", "应加 ONLY empty glowing cyan eye sockets, NO facial features, NO mouth, NO nose, NO teeth"),
+    # 超自然实体：不应有五官（只检测中文人脸关键词，不检测英文否定词）
+    ("超自然|租客|房东|发光眼窝|幽绿|影子|虚影|黑影", [
+        ("__CHINESE_FACE__", "超自然实体有五官/人类形象", "超自然实体只能用剪影/虚影/发光眼窝，中文写：无五官，无面部，无嘴无鼻"),
     ]),
     # 医院场景：主角不是病人
     ("医院|ICU|重症|病床|病房|老人|抢救|急救", [
@@ -64,14 +72,18 @@ def check_prompt_logic(pid, prompt, atype):
     byte_len = len(prompt.encode('utf-8'))
     if byte_len > 400:
         issues.append(f"prompt超400字节（{byte_len}字节，约{len(prompt)}字），Step API会返回HTTP 400")
-    elif byte_len > 300:
+    elif byte_len > 350:
         issues.append(f"prompt接近400字节（{byte_len}字节），注意可能触发限制")
     prompt_lower = prompt.lower()
     for pattern, checks in LOGIC_RULES:
-        if re.search(pattern, prompt_lower):
-            for keyword, label, suggestion in checks:
-                if re.search(keyword, prompt_lower):
+        if not re.search(pattern, prompt_lower):
+            continue
+        for keyword, label, suggestion in checks:
+            if keyword == "__CHINESE_FACE__":
+                if _has_chinese_face_word(prompt):
                     issues.append(f"{label} → {suggestion}")
+            elif re.search(keyword, prompt_lower):
+                issues.append(f"{label} → {suggestion}")
     return issues
 
 
