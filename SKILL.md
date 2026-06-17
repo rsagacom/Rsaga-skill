@@ -141,6 +141,10 @@ python3 scripts/mm-gateway.py
 
 ⚠️ **重要**：Python f-string 中必须使用 `{Q}` 和 `{S}`，不能写成 `Q,` 或 `S,`
 
+⚠️ **情绪连续性**：相邻画格的角色情绪必须是渐变而非跳跃。每格 prompt 需标注当前情绪状态（表情/眼神/肢体语言），确保上下格之间情绪过渡自然。
+
+⚠️ **回忆场景年龄**：回忆/闪回中的角色必须标注当时的年龄（如 `young boy version of {Q}, age 7-8`），不能用成年版 `{Q}`，否则模型会画出成年人在童年场景中。
+
 ```python
 # 分镜脚本模板
 Q = "Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, tired hollow eyes with dark circles, pale skin."
@@ -245,7 +249,7 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 ---
 
-*最后更新: 2026-06-16*
+*最后更新: 2026-06-17*
 
 ---
 
@@ -253,7 +257,9 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **v0.5.0** | 2026-06-16 | Kimi K2.7 全流程（编剧+分镜+配文），1句=1格粒度，{Q}/{S} 自动替换，角色描述固定模板，超自然实体硬约束，视觉审查降级机制 |
+| **v0.5.2** | 2026-06-17 | 回忆场景年龄特征约束：闪回/童年场景必须标注角色年龄，禁用成年版 {Q} |
+| **v0.5.1** | 2026-06-16 | 情绪连续性约束：相邻画格角色情绪渐变，每格 prompt 显式标注情绪状态 |
+| **v0.5.0** | 2026-06-16 | Kimi K2.7 全流程（编剧+分镜+配文），1句=1格粒度，{Q}/{S} 自动替换，角色描述固定模板 |
 | v0.4.0 | 2026-06-11 | 5种新布局类型，DS v4 Pro 改编层模板，合并脚本 |
 | v0.3.0 | 2026-06-08 | 第四章排版，补全缺失旁白 |
 | v0.2.0 | 2026-06-07 | 视觉审核模块，自动修复，v7 CHECKLIST |

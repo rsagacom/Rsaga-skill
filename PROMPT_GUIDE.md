@@ -91,6 +91,48 @@ abstract → 抽象/隐喻画面
 4. 审核类型从改编条目末尾提取
 5. 严格输出纯 Python 代码，不要 markdown 包裹
 
+### ⚠️ 核心约束：情绪连续性（v0.5 新增）
+
+漫画的上下格之间，角色的**表情/情绪必须是渐变**，不能跳跃。
+
+具体规则：
+1. **每格 prompt 必须显式标注角色的当前情绪状态**（表情/眼神/肢体语言）
+2. **相邻画格的情绪变化幅度必须合理**：
+   - ✅ 面无表情 → 微微皱眉 → 眉头紧锁 → 惊恐（4格渐变，合理）
+   - ❌ 面无表情 → 惊恐尖叫（1格跳跃，不合理）
+   - ✅ 平静 → 好奇 → 困惑 → 不安 → 恐惧（多格渐变）
+   - ❌ 微笑 → 崩溃大哭（跳跃）
+3. **同一情绪单元内的连续 character 画格**，相邻格的 prompt 要体现情绪递进：
+   - P035：`{Q} standing still, face blank, slight furrow beginning between brows`
+   - P036：`{Q} slowly turning head, brow furrowed deeper, eyes beginning to widen`
+   - P037：`{Q} staring at wall, eyes fully wide, mouth slightly open, dawning horror`
+4. **场景格和抽象格不适用此规则**，但相邻的 character 格仍需与前/后场景格的情绪基调一致
+
+### ⚠️ 核心约束：回忆场景年龄特征（v0.5.2 新增）
+
+当漫画中出现**回忆/闪回/追溯童年**等时间回溯场景时，角色的外貌必须符合当时的年龄。
+
+具体规则：
+1. **每格回忆场景的 prompt 必须显式标注角色的当前年龄**，不能使用成年版的 `{Q}`
+2. 年龄标注方式：
+   - 童年（<12岁）：`young boy version of {Q}, age 7-8, smaller build, childlike features, ...`
+   - 少年（12-18岁）：`teenage version of {Q}, age 15-16, adolescent features, ...`
+   - 其他角色也需标注年龄：`Shen Jun as a teenage bully, age 15-16, ...`
+3. 如果是多角色同框的回忆场景，每个角色的年龄都要对应
+4. 回忆结束后回到现实，恢复使用成年版 `{Q}`
+
+正确示例：
+```
+P030: young boy version of {Q}, age 7-8, pinned in a sandpit, bullies pouring sand into his mouth, small child's face with tears, {S}
+P031: {Q} as adult, sitting on park bench, hollow eyes staring into distance, back to present, {S}
+```
+
+错误示例（❌ 必须避免）：
+```
+P030: {Q}, pinned in a sandpit, bullies pouring sand into his mouth, {S}
+→ 模型会用成年祁思远的脸，出现"大人被灌沙子"的荒谬画面
+```
+
 【改编层粘贴在此】
 ```
 
