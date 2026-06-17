@@ -41,10 +41,10 @@ class ComicLayoutEngine:
         font_light = _resolve_font("light", project.get("font_light",
             "/System/Library/Fonts/STHeiti Light.ttc"))
 
-        self.font_title = ImageFont.truetype(font_title, 80)
-        self.font_bubble = ImageFont.truetype(font_body, 56)
-        self.font_small = ImageFont.truetype(font_body, 40)
-        self.font_sfx = ImageFont.truetype(font_body, 96)
+        self.font_title = ImageFont.truetype(font_title, 64)
+        self.font_bubble = ImageFont.truetype(font_body, 40)
+        self.font_small = ImageFont.truetype(font_body, 32)
+        self.font_sfx = ImageFont.truetype(font_body, 88)
         self.font_page = ImageFont.truetype(font_light, 14)
 
         self.c_black = (20, 20, 20)
@@ -65,6 +65,28 @@ class ComicLayoutEngine:
                     if dx != 0 or dy != 0:
                         draw.text((x + dx, y + dy), text, fill=outline, font=font)
         draw.text((x, y), text, fill=fill, font=font)
+
+    def draw_vertical_text(self, draw, x, y, text, font, fill=None, outline=None, width=3, col_gap=10, max_h=600):
+        """古籍竖排：从上往下读，从右往左列"""
+        if fill is None:
+            fill = self.c_black
+        if outline is None:
+            outline = self.c_white
+        ch_h = font.getbbox("国")[3] - font.getbbox("国")[1] if font.getbbox("国") else font.size
+        ch_w = font.getbbox("国")[2] - font.getbbox("国")[0] if font.getbbox("国") else font.size
+        col_h = max_h
+        max_chars_per_col = max(1, col_h // (ch_h + 2))
+
+        chars = list(text)
+        cols = [chars[i:i+max_chars_per_col] for i in range(0, len(chars), max_chars_per_col)]
+
+        cx = x
+        for col in cols:
+            cy = y
+            for ch in col:
+                self.draw_text_outline(draw, cx, cy, ch, font, fill, outline, width)
+                cy += ch_h + 2
+            cx -= ch_w + col_gap  # 从右往左
 
     def wrap_text(self, text, font, max_width):
         lines = []
@@ -252,64 +274,58 @@ class ComicLayoutEngine:
             self.draw_panel_border(draw, boxes[i])
         return boxes[:len(names)]
 
-    def draw_bubble(self, draw, box, style, text):
-        # 简化版气泡绘制，完整版可参考原脚本
+    def draw_bubble(self, draw, box, style, text, tail_dir="bottom"):
+        """古籍竖排对话框：从上往下读，从右往左列"""
         x1, y1, x2, y2 = box
-        avail_w = x2 - x1 - 30
-        lines = self.wrap_text(text, self.font_bubble, avail_w)
-        tw, th, line_h = self.calc_text_size(lines, self.font_bubble)
-        pad = int(self.font_bubble.size * 0.9)
-        bw = min(tw + pad * 2, avail_w)
-        bh = min(th + pad * 2, y2 - y1 - 30)
-        bx = x1 + (x2 - x1 - bw) // 2
-        by = y1 + (y2 - y1 - bh) // 2 + 20
-        bx = max(x1 + 10, min(bx, x2 - bw - 10))
-        by = max(y1 + 10, min(by, y2 - bh - 10))
+        pad = int(self.font_bubble.size * 0.6)
+
+        # 估算框大小（竖排）
+        ch_w = self.font_bubble.getbbox("国")[2] - self.font_bubble.getbbox("国")[0]
+        ch_h = self.font_bubble.getbbox("国")[3] - self.font_bubble.getbbox("国")[1]
+        col_h = y2 - y1 - pad * 2
+        max_ch_per_col = max(1, col_h // (ch_h + 2))
+        total_ch = len(text)
+        n_cols = (total_ch + max_ch_per_col - 1) // max_ch_per_col
+        box_w = min(n_cols * (ch_w + 8) + pad * 2, int((x2 - x1) * 0.50))
+        box_h = min(col_h + pad * 2, y2 - y1 - 10)
+
+        # 日漫策略：选4个角落中离中心最远的可放置位置
+        cx = (x1 + x2) // 2
+        cy = (y1 + y2) // 2
+        corners = [
+            (x1 + 10, y1 + 10, "top-left"),
+            (x2 - box_w - 10, y1 + 10, "top-right"),
+            (x1 + 10, y2 - box_h - 10, "bottom-left"),
+            (x2 - box_w - 10, y2 - box_h - 10, "bottom-right"),
+        ]
+        best = corners[0]
+        best_dist = 0
+        for bx, by, pos in corners:
+            if bx < x1 or by < y1 or bx + box_w > x2 or by + box_h > y2:
+                continue
+            dist = abs(bx + box_w//2 - cx) + abs(by + box_h//2 - cy)
+            if dist > best_dist:
+                best_dist = dist
+                best = (bx, by, pos)
+        bx, by, _ = best
+
+        # 竖排绘制文字（古籍风格：从上往下，从右往左）
+        text_x = bx + box_w - pad
+        text_y = by + pad
+        max_h = box_h - pad * 2
 
         if style == "supernatural":
-            pts = [
-                (bx, by + 12), (bx + 10, by), (bx + bw - 10, by), (bx + bw, by + 12),
-                (bx + bw + 5, by + bh // 2), (bx + bw, by + bh - 12), (bx + bw - 10, by + bh),
-                (bx + 10, by + bh), (bx, by + bh - 12), (bx - 5, by + bh // 2)
-            ]
-            draw.polygon(pts, fill=self.c_black, outline=self.c_white)
-            ty = by + pad
-            for line in lines:
-                bbox = self.font_bubble.getbbox(line)
-                lw = bbox[2] - bbox[0] if bbox else 0
-                tx = bx + (bw - lw) // 2
-                draw.text((tx, ty), line, fill=self.c_white, font=self.font_bubble)
-                ty += line_h
+            draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_white, width=2)
+            self.draw_vertical_text(draw, text_x, text_y, text, self.font_bubble, fill=self.c_white, outline=self.c_black, width=3, max_h=max_h)
         elif style == "sfx":
-            ty = by + pad
-            for line in lines:
-                bbox = self.font_sfx.getbbox(line)
-                lw = bbox[2] - bbox[0] if bbox else 0
-                tx = bx + (bw - lw) // 2
-                for r in range(5, 0, -1):
-                    for dx in [-r, 0, r]:
-                        for dy in [-r, 0, r]:
-                            if dx != 0 or dy != 0:
-                                draw.text((tx + dx, ty + dy), line, fill=self.c_white, font=self.font_sfx)
-                draw.text((tx, ty), line, fill=self.c_black, font=self.font_sfx)
-                ty += line_h
+            draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_black, width=3)
+            self.draw_vertical_text(draw, text_x, text_y, text, self.font_sfx, fill=self.c_black, outline=self.c_white, width=4, max_h=max_h)
         elif style == "title":
-            ty = by + pad
-            for line in lines:
-                bbox = self.font_title.getbbox(line)
-                lw = bbox[2] - bbox[0] if bbox else 0
-                tx = bx + (bw - lw) // 2
-                self.draw_text_outline(draw, tx, ty, line, self.font_title, width=4)
-                ty += line_h
+            draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_black, width=3)
+            self.draw_vertical_text(draw, text_x, text_y, text, self.font_title, fill=self.c_black, outline=self.c_white, width=4, max_h=max_h)
         else:
-            draw.rounded_rectangle((bx, by, bx + bw, by + bh), radius=20, fill=self.c_white, outline=self.c_black, width=3)
-            ty = by + pad
-            for line in lines:
-                bbox = self.font_bubble.getbbox(line)
-                lw = bbox[2] - bbox[0] if bbox else 0
-                tx = bx + (bw - lw) // 2
-                self.draw_text_outline(draw, tx, ty, line, self.font_bubble)
-                ty += line_h
+            draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_black, width=3)
+            self.draw_vertical_text(draw, text_x, text_y, text, self.font_bubble, fill=self.c_black, outline=self.c_white, width=3, max_h=max_h)
 
     def draw_narration(self, page, draw, box, text):
         x1, y1, x2, y2 = box
