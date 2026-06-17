@@ -54,16 +54,18 @@ LOGIC_RULES = [
     ("尸体|猝死|死亡|死去|栽倒|倒在地上", [
         ("stand up|walk|open eyes|breathe|move|爬起来|站起来|睁眼", "尸体在动", "尸体应保持静止不动"),
     ]),
-    # 中文 prompt 长度限制
-    (".*", [
-        ("^.{250,}", "prompt过长", "中文prompt应控制在250字以内，避免触发API限制"),
-    ]),
 ]
 
 
 def check_prompt_logic(pid, prompt, atype):
     """对单条 prompt 进行逻辑检测，返回问题列表"""
     issues = []
+    # 长度检测（Step API 400字节限制，每个中文字3字节）
+    byte_len = len(prompt.encode('utf-8'))
+    if byte_len > 400:
+        issues.append(f"prompt超400字节（{byte_len}字节，约{len(prompt)}字），Step API会返回HTTP 400")
+    elif byte_len > 300:
+        issues.append(f"prompt接近400字节（{byte_len}字节），注意可能触发限制")
     prompt_lower = prompt.lower()
     for pattern, checks in LOGIC_RULES:
         if re.search(pattern, prompt_lower):
