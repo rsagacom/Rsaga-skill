@@ -353,6 +353,7 @@ class ComicLayoutEngine:
         核心规则：
         - 关键剧情时刻（supernatural/emotional peak）→ full 全页大格
         - 情绪递进序列（连续 character 同情绪单元）→ triple-row 或 hero
+        - 生死/剧烈疼痛/恐惧/情绪波动大 → full 特写全页
         - 动作/死亡场景 → hero 上大下二
         - 对话/日常 → 2x2 标准四格
         - 超自然实体首次出现 → full 全页
@@ -374,14 +375,14 @@ class ComicLayoutEngine:
             return []
 
         # 按叙事顺序排列的 panel_id 列表
-        sorted_pids = sorted(panel_types.keys(), key=lambda x: int(x.replace("P", "")))
+        sorted_pids = sorted(panel_types.keys(), key=lambda x: int(''.join(filter(str.isdigit, x)) or '0'))
 
         pages = []
         i = 0
         while i < len(sorted_pids):
             pid = sorted_pids[i]
             atype = panel_types.get(pid, "scene")
-            pid_num = int(pid.replace("P", ""))
+            pid_num = int(''.join(filter(str.isdigit, pid)) or '0')
 
             # 规则1：超自然实体首次出现 → full 全页
             if atype == "supernatural" and self._is_first_of_type(pid, "supernatural", sorted_pids, panel_types):
@@ -401,7 +402,18 @@ class ComicLayoutEngine:
                 i += len(batch)
                 continue
 
-            # 规则3：abstract 关键画面 → full
+            # 规则3：生死/剧烈疼痛/恐惧/情绪波动大 → full 特写全页
+            high_emotion_keywords = ["死", "恐惧", "惨叫", "痛苦", "尖叫", "窒息",
+                                      "恐慌", "僵", "断裂", "血", "崩溃", "绝望"]
+            prompt_text = ""
+            if panels_list and i < len(panels_list):
+                prompt_text = panels_list[i][1]
+            if atype in ("character", "abstract") and any(kw in prompt_text for kw in high_emotion_keywords):
+                pages.append(("full", [pid]))
+                i += 1
+                continue
+
+            # 规则4：abstract 关键画面 → full
             if atype == "abstract" and pid_num in [11, 26, 29, 37, 39, 60, 65, 89, 98, 111]:
                 pages.append(("full", [pid]))
                 i += 1
