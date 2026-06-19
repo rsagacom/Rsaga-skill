@@ -1,6 +1,6 @@
 ---
 name: novel-to-comic
-description: 小说转漫画引擎（v1.0） - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1句=1格粒度控制）、Kimi K2.7 编剧+分镜+配文全流程、Step Image Edit 2 批量生图、多模态视觉审核、古籍竖排对话框、排版输出 PDF。
+description: 小说转漫画引擎（v1.0） - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1句=1格粒度控制）、DS v4 Pro 编剧+ Kimi K2.7 分镜+配文全流程、Step Image Edit 2 批量生图、多模态视觉审核、古籍竖排对话框、排版输出 PDF。
 version: 1.0.0
 metadata:
   working_dir: .
@@ -17,7 +17,7 @@ metadata:
 ## 工作流程
 
 ```
-小说原文 → Kimi K2.7 编剧（改编层） → Kimi K2.7 分镜脚本 → Step Image Edit 2 批量生图 → 视觉审查 → Kimi 配文排版 → PDF 输出
+小说原文 → DS v4 Pro 编剧（改编层） → Kimi K2.7 分镜脚本 → Step Image Edit 2 批量生图 → 视觉审查 → Kimi 配文排版 → PDF 输出
 ```
 
 ### Step 0: 准备工作
@@ -30,9 +30,10 @@ python3 scripts/mm-gateway.py
 ### Step 1: 读取小说
 读取 `projects/<项目名>/chapter_XX.md`，理解剧情结构、角色、情绪转折。
 
-### Step 1.5: 改编层（Kimi K2.7 编剧，⚠️ 关键，不可跳过）
+### Step 1.5: 改编层（DS v4 Pro 编剧，⚠️ 关键，不可跳过）
 
-**这是漫画编剧步骤，由 Kimi K2.7 执行。**
+**这是漫画编剧步骤，由 DS v4 Pro（DeepSeek v4 Pro）执行。**
+文字剧情创作是 DS v4 Pro 的强项（深度理解文本内涵、精确控制叙事节奏、旁白连贯性）。
 
 在生成分镜脚本之前，必须先产出 `projects/<项目名>/adaptation_chXX.md`，包含：
 - 选取的小说原文段落（标注来源行号）
@@ -256,7 +257,7 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 ---
 
-*最后更新: 2026-06-17*
+*最后更新: 2026-06-19*
 
 ---
 
@@ -264,6 +265,7 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| **v1.0.1** | 2026-06-19 | 修正模型路由：改编层（文字剧情）改为 DS v4 Pro，分镜/配文保持 Kimi K2.7 |
 | **v1.0.0** | 2026-06-17 | 古籍竖排对话框（从上往下、从右往左列），旁白保持横排；回忆场景年龄特征约束；女性剪影特征强化；对话框透明底黑框；文字白色描边；字体缩小适配；对话框角落布局不遮挡人脸 |
 | **v0.5.2** | 2026-06-17 | 回忆场景年龄特征约束：闪回/童年场景必须标注角色年龄，禁用成年版 {Q} |
 | **v0.5.1** | 2026-06-16 | 情绪连续性约束：相邻画格角色情绪渐变，每格 prompt 显式标注情绪状态 |
@@ -271,4 +273,4 @@ python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
 | v0.4.0 | 2026-06-11 | 5种新布局类型，DS v4 Pro 改编层模板，合并脚本 |
 | v0.3.0 | 2026-06-08 | 第四章排版，补全缺失旁白 |
 | v0.2.0 | 2026-06-07 | 视觉审核模块，自动修复，v7 CHECKLIST |
-| v0.1.0 | 2026-06-04 | 初版：改编层→分镜→生图→排版→PDF
+| v0.1.0 | 2026-06-09 | 初版：改编层→分镜→生图→排版→PDF

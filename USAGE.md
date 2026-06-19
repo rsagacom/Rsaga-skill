@@ -61,9 +61,9 @@ providers:
 ```
 小说原文（chapter_XX.md）
         ↓
-Step 1  读取 + 理解剧情
+Step 1  读取 + 理解剧情（DS v4 Pro）
         ↓
-Step 2  生成分镜脚本（PANELS 列表）
+Step 2  生成分镜脚本（Kimi K2.7，PANELS 列表）
         ↓
 Step 3  批量生成画格（step-image-edit-2）
         ↓
