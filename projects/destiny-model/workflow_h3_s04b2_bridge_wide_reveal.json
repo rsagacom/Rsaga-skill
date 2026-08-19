@@ -1,0 +1,94 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int4_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int4_convrot.safetensors",
+      "type": "minimax",
+      "device": "cpu"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "h3_s04a_last.png"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "clip": ["2", 0],
+      "vae": ["3", 0],
+      "prompt": "严格承接输入首帧，首帧前半秒保持原构图不变；随后摄影机向后方并向上方缓慢升起，保持水平地平线，绝不俯拍地面，原有滑梯逐渐退到画面右下角并离开；最终形成宽幅中远景，完整展示一座横跨干涸河床的旧石拱桥，桥身横向延伸在画面中部，桥面是水平长条，桥体由清晰石块砌成，正面只有一个宽大的圆拱桥洞，桥洞位于桥身下方而不是地面上的洞；夕阳从桥后方照亮轮廓，桥洞内部保持不自然的黑暗；镜头保持中远景直到结束，石桥整体结构始终可见，空间透视稳定；无人物，无对白，无地面黑洞，无隧道，无第二座桥，无新滑梯，无近距离桥洞特写",
+      "width": 832,
+      "height": 480,
+      "length": 124,
+      "first_frame": ["4", 0]
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "model": ["1", 0],
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    }
+  },
+  "7": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": ["5", 0]
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["6", 0],
+      "seed": 20260814,
+      "steps": 20,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": ["5", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 1],
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["8", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "10": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["9", 0],
+      "fps": 24.0,
+      "bit_depth": 8
+    }
+  },
+  "11": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["10", 0],
+      "filename_prefix": "h3_s04b2_bridge_wide_reveal",
+      "format": "mp4",
+      "codec": "auto"
+    }
+  }
+}

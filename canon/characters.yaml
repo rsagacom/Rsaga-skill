@@ -1,0 +1,73 @@
+# 命运模型 Canon — 角色
+
+canon_schema_version: 1.0
+project: destiny-model
+chapter_scope: ["ch01"]
+source:
+  doc: "《命运模型》第一章：祁元思远在废弃城市桥边观察到黑衣女子走入桥下阴影并消失，随后低声说『刚才那里，明明有人。』"
+  source_sha256: null  # 正式入库时回填原文哈希；见 ASSET_MANIFEST.schema.json 的 source 合同
+  reviewed: false   # canon 初稿：draft，人工审核后置 approved
+
+characters:
+  - id: CHAR_001
+    name: 祁元思远
+    role: protagonist
+    status: draft
+    age: 青年
+    core_identity:
+      face:
+        - "薄金属眼镜"
+        - "黑色短发"
+        - "瘦削脸型"
+      body: "中等身材，偏瘦"
+      default_costume: CHAR_001_COSTUME_v01
+      default_face_ref: CHAR_001_FACE_v01
+    costume_versions:
+      - id: CHAR_001_COSTUME_v01
+        status: draft
+        items:
+          - "米色外套（夹克）"
+          - "深蓝 V 领内搭"
+          - "黑色背包"
+        palette: ["米色", "深蓝", "黑色"]
+    voice_profile: null  # 未建：P1 CosyVoice 音色选定后登记 voice_profile_id
+    forbidden_changes:
+      - "不得摘掉或改变眼镜样式"
+      - "发型保持黑色短发，不得延长或改色"
+      - "外套颜色必须保持米色系"
+    source_segments: []
+    related_entities:
+      - target: SCENE_012
+        relation: appears_at
+    versions:
+      - id: CHAR_001_v1
+        parent: null
+        changed: ["core_identity.face", "core_identity.default_costume"]
+        status: draft
+        downsteam_assets: []  # 由影响分析引擎计算，此字段为人工登记的快照
+
+  - id: CHAR_002
+    name: 黑衣女子
+    role: mystery
+    status: draft
+    age: 未知
+    core_identity:
+      face: "面容不清，身份未揭示"
+      body: "黑衣，体态纤细"
+      default_costume: CHAR_002_COSTUME_v01
+      default_face_ref: null
+    costume_versions:
+      - id: CHAR_002_COSTUME_v01
+        status: draft
+        items: ["黑色衣物"]
+        palette: ["黑色"]
+    voice_profile: null
+    forbidden_changes: []
+    source_segments: []
+    related_entities: []
+    versions:
+      - id: CHAR_002_v1
+        parent: null
+        changed: []
+        status: draft
+        downsteam_assets: []

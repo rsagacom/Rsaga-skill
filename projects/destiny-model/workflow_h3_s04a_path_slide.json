@@ -1,0 +1,87 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int4_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int4_convrot.safetensors",
+      "type": "minimax",
+      "device": "cpu"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "clip": ["2", 0],
+      "vae": ["3", 0],
+      "prompt": "横屏电影化写实科幻惊悚镜头，初冬傍晚，城市边缘荒废公园，低机位摄影机沿一条开裂的石板路缓慢向前推进；全片只出现一座歪斜的旧金属儿童滑梯，滑梯固定在画面右侧，滑道底部有一小片近乎黑色的雨水，杂草从石板缝隙长出，锈红色夕阳从危墙后方斜照，空气有轻微冷雾和尘埃；镜头运动连续平稳，始终保持同一座滑梯、同一条石板路和同一方向的夕阳，结尾停在滑梯与黑色积水的稳定中景；无人物，无桥，无河床，无第二座滑梯，无新增建筑，无对白",
+      "width": 832,
+      "height": 480,
+      "length": 124
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "model": ["1", 0],
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    }
+  },
+  "6": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": ["4", 0]
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["5", 0],
+      "seed": 20260812,
+      "steps": 20,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": ["4", 0],
+      "negative": ["6", 0],
+      "latent_image": ["4", 1],
+      "denoise": 1.0
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["7", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "9": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["8", 0],
+      "fps": 24.0,
+      "bit_depth": 8
+    }
+  },
+  "10": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["9", 0],
+      "filename_prefix": "h3_s04a_path_slide",
+      "format": "mp4",
+      "codec": "auto"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+[      43ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://127.0.0.1:3000/_next/static/chunks/app/page-a3c8075740bc9906.js:0
+[      43ms] [ERROR] Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/app/page-a3c8075740bc9906.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:3000/:0
+[  120066ms] ChunkLoadError: Loading chunk 974 failed.
+(timeout: http://127.0.0.1:3000/_next/static/chunks/app/page-a3c8075740bc9906.js)
+    at r.f.j (http://127.0.0.1:3000/_next/static/chunks/webpack-5ccaef2bffd69783.js:1:2822)
+    at http://127.0.0.1:3000/_next/static/chunks/webpack-5ccaef2bffd69783.js:1:1211
+    at Array.reduce (<anonymous>)
+    at r.e (http://127.0.0.1:3000/_next/static/chunks/webpack-5ccaef2bffd69783.js:1:1190)
+    at c (http://127.0.0.1:3000/_next/static/chunks/255-3d881dfa8c72bc56.js:1:136757)
+    at http://127.0.0.1:3000/_next/static/chunks/255-3d881dfa8c72bc56.js:1:151522
+    at t (http://127.0.0.1:3000/_next/static/chunks/255-3d881dfa8c72bc56.js:1:152980)
+[  120073ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3000/favicon.ico:0

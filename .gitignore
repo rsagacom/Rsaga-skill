@@ -1,8 +1,24 @@
 # 配置文件（含敏感 API key）
 config.yaml
+runtime/
+.venv/
+*.sqlite3
+*.db
+web/node_modules/
+web/.next/
+web/out/
+orchestrator/node_modules/
+orchestrator/dist/
 config.yml
 *.env
 .env
+
+# Provider deployment artifacts: workflow JSON may contain private node paths,
+# model choices or embedded credentials; keep deployment copies outside Git.
+workflows/*.json
+!workflows/.gitkeep
+!workflows/ci-image.json
+!workflows/ci-video.json
 
 # 输出目录（大文件）
 projects/*/output/
@@ -49,3 +65,26 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# 大体积本地缓存/评估/测试产物（不应提交 GitHub）
+.cache/
+h3-evaluation-offline/
+test-runs/
+tmp/
+output/
+GOLDEN_SHOTS/
+*.pth
+*.safetensors
+*.ckpt
+*.bin
+*.onnx
+*.gguf
+*.npz
+*.npy
+*.wav
+*.mp4
+*.mp3
+*.mov
+*.avi
+*.webm
+projects/bridge-god/ch03/pages_safe_20260620/*.pdf

@@ -1,0 +1,112 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "cpu"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "h3_s04a_official_last.png"
+    }
+  },
+  "5": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": ["4", 0],
+      "upscale_method": "nearest-exact",
+      "megapixels": 0.98,
+      "resolution_steps": 32
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "clip": ["2", 0],
+      "vae": ["3", 0],
+      "prompt": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] Live-action, cinematic, the abandoned park path, rust-red sunset, damaged wall, dry weeds, and the single crooked metal slide shown in <Picture 1> remain fully consistent in appearance, lighting, and spatial position. The shot begins by holding the opening composition briefly. The camera then pulls out with small amplitude at slow speed and performs a gentle pedestal up while keeping the horizon level. The slide gradually exits through the lower right corner. The camera continues the same unbroken movement until a wide medium-long view reveals a complete old stone bridge spanning the dry riverbed: a horizontal bridge deck, visible masonry blocks, and exactly one broad round arch beneath the bridge body. The bridge is a real elevated structure in the middle distance, not a hole or tunnel in the ground. Keep the whole bridge visible through the end of the shot. No cuts, no close-up of the ground, no tunnel, no second bridge, no new slide, no people.\n\noverall_soundscape: Cold wind moves through dry weeds and continues across the camera movement. Faint metal creaks fade as the slide leaves frame, replaced by a low hollow air tone beneath the stone bridge.\n\nnon_diegetic_music: N/A",
+      "width": 1344,
+      "height": 768,
+      "length": 124,
+      "first_frame": ["5", 0]
+    }
+  },
+  "7": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "res_multistep"
+    }
+  },
+  "8": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": ["1", 0],
+      "scheduler": "simple",
+      "steps": 20,
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 20260816
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": ["1", 0],
+      "conditioning": ["6", 0]
+    }
+  },
+  "11": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["9", 0],
+      "guider": ["10", 0],
+      "sampler": ["7", 0],
+      "sigmas": ["8", 0],
+      "latent_image": ["6", 1]
+    }
+  },
+  "12": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["11", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "13": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["12", 0],
+      "fps": 24.0,
+      "bit_depth": 8
+    }
+  },
+  "14": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["13", 0],
+      "filename_prefix": "h3_s04b_official_int8_1mp",
+      "format": "mp4",
+      "codec": "auto"
+    }
+  }
+}

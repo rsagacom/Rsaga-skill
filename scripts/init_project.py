@@ -17,8 +17,8 @@ STORYBOARD_TEMPLATE = '''#!/usr/bin/env python3
 # 或带审核类型: (画格名称, 英文 prompt, 审核类型)
 # 审核类型: character, supernatural, hand, scene, abstract
 PANELS = [
-    ("P01_扉页", "Wide shot abstract dark background, misty atmosphere, ... Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."),
-    # ("P02_画格1_场景名", "Close-up <角色描述>... Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."),
+    ("P01_扉页", "Wide shot abstract dark background, misty atmosphere, East Asian B/W manhua, G-pen ink, high-contrast grayscale, 2D comic, NOT photo, NOT photorealistic, NOT realistic face."),
+    # ("P02_画格1_场景名", "Close-up <角色描述>... East Asian B/W manhua, G-pen ink, high-contrast grayscale, 2D comic, NOT photo, NOT photorealistic, NOT realistic face."),
     # 更多画格...
 ]
 '''
@@ -62,10 +62,10 @@ AUDIT_RULES_TEMPLATE = '''# 项目审核规则
 #   keywords: ["祁思远", "主角", "青年", "眼镜"]
 #   prompt: |
 #     审核要求：检查图中男子是否符合角色设定。
-#     角色设定：Young Chinese man 25yo, thin black-frame glasses, short black hair...
+#     角色设定：Young Chinese man 25yo, thin wire-rim glasses, short black hair...
 #     请逐一检查：
 #     1. 发型是否为黑色短发带刘海？
-#     2. 是否佩戴细黑框眼镜？
+#     2. 是否佩戴细金属框眼镜？
 #     3. 服装是否为米色休闲西装+深蓝色V领衬衫？
 #     4. 画面是否出现重影/叠加/双重人像？
 #     只输出发现的问题，每条一行。如无问题，输出「通过」。

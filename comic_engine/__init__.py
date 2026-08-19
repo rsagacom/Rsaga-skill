@@ -22,10 +22,19 @@
 from .config import load_config
 from .generator import generate_panels, estimate_resources
 from .auditor import audit_panels, load_audit_rules
-from .layout import ComicLayoutEngine
 from .utils import load_storyboard, detect_platform_fonts
 
 __version__ = "0.3.0"
+
+
+def __getattr__(name):
+    """按需加载排版引擎，避免轻量脚本被 PIL/ReportLab 依赖阻断。"""
+    if name == "ComicLayoutEngine":
+        from .layout import ComicLayoutEngine
+        return ComicLayoutEngine
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     "load_config",
     "generate_panels",

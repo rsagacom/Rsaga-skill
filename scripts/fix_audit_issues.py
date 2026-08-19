@@ -6,7 +6,7 @@ from pathlib import Path
 GATEWAY = "http://127.0.0.1:11939/image/generate"
 SIZE = "1024x1024"
 PANELS_DIR = Path("/Users/rsaga/Documents/Playground/projects/桥底的溃烂神明/chapter1/panels")
-S = "Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
+S = "East Asian B/W manhua, G-pen ink, high-contrast grayscale, 2D comic, NOT photo, NOT photorealistic, NOT realistic face."
 Q = ("Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs "
      "covering forehead, beige casual blazer, dark blue V-neck shirt, old black backpack, "
      "tired hollow eyes with dark circles, pale skin.")

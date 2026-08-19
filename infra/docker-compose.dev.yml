@@ -1,0 +1,80 @@
+# 本地预览栈：启动 SQLite API + Web + 持久化本地 worker，不连接生产依赖或真实 Provider。
+# 生产必须使用 docker-compose.yml，并通过 config-check 和 secret manager 注入配置。
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    environment:
+      STUDIO_ENV: development
+      STUDIO_STORE: sqlite
+      STUDIO_RUNTIME_DIR: /app/runtime
+      STUDIO_REQUIRE_AUTH: "false"
+      STUDIO_AUTH_COOKIE_SECURE: "false"
+      STUDIO_ALLOWED_HOSTS: localhost,127.0.0.1,api
+      STUDIO_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      STUDIO_QUEUE_BACKEND: local
+      STUDIO_STORAGE: local
+      STUDIO_COMPOSE_ENGINE: ffmpeg
+      STUDIO_BILLING_PROVIDER: disabled
+      STUDIO_ALLOW_LOCAL_TOP_UP: "true"
+      STUDIO_INTERNAL_TOKEN: ${STUDIO_INTERNAL_TOKEN:-local-dev-internal-token}
+      STUDIO_TEXT_PROVIDER: local
+      STUDIO_IMAGE_PROVIDER: local
+      STUDIO_VIDEO_PROVIDER: local
+      STUDIO_VISION_PROVIDER: local
+      STUDIO_SPEECH_PROVIDER: local
+      STUDIO_SPEECH_ALLOWED_VOICES: ${STUDIO_SPEECH_ALLOWED_VOICES:-cedar,marin,alloy,ash,ballad,coral,echo,fable,nova,onyx,sage,shimmer,verse}
+    ports:
+      - "8787:8787"
+    volumes:
+      - manhua-dev-runtime:/app/runtime
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/api/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    command: ["python", "-m", "studio_api.worker", "--runtime-dir", "/app/runtime", "--interval", "0.5"]
+    environment:
+      STUDIO_ENV: development
+      STUDIO_STORE: sqlite
+      STUDIO_RUNTIME_DIR: /app/runtime
+      STUDIO_REQUIRE_AUTH: "false"
+      STUDIO_AUTH_COOKIE_SECURE: "false"
+      STUDIO_QUEUE_BACKEND: local
+      STUDIO_STORAGE: local
+      STUDIO_COMPOSE_ENGINE: ffmpeg
+      STUDIO_BILLING_PROVIDER: disabled
+      STUDIO_ALLOW_LOCAL_TOP_UP: "true"
+      STUDIO_TEXT_PROVIDER: local
+      STUDIO_IMAGE_PROVIDER: local
+      STUDIO_VIDEO_PROVIDER: local
+      STUDIO_VISION_PROVIDER: local
+      STUDIO_SPEECH_PROVIDER: local
+      STUDIO_SPEECH_ALLOWED_VOICES: ${STUDIO_SPEECH_ALLOWED_VOICES:-cedar,marin,alloy,ash,ballad,coral,echo,fable,nova,onyx,sage,shimmer,verse}
+    volumes:
+      - manhua-dev-runtime:/app/runtime
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: http://localhost:8787
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  manhua-dev-runtime:

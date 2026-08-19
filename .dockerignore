@@ -1,0 +1,17 @@
+.git
+.venv
+runtime
+tmp
+config.yaml
+config.yml
+**/__pycache__
+web/node_modules
+web/.next
+orchestrator/node_modules
+orchestrator/dist
+projects/*/output
+projects/*/panels
+projects/*/pages
+projects/*/*.pdf
+*.sqlite3
+*.db

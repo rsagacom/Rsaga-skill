@@ -1,0 +1,63 @@
+{
+  "profile_id": "minimax-h3-pruned-int8-drbaph-v1",
+  "status": "model-selection-closed-long-video-specialization-ready",
+  "hardware_target": "RTX 3060 12GB + 32GB RAM",
+  "default_resolution": {
+    "width": 640,
+    "height": 384,
+    "fps": 24,
+    "frames": 124
+  },
+  "default_steps": 8,
+  "preview_steps": 4,
+  "model": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+  "text_encoder": "qwen3vl_32b_minimax_h3_int4_convrot.safetensors",
+  "video_vae": "minimax_h3_video_vae_fp16.safetensors",
+  "audio_vae": "minimax_h3_audio_vae_fp32.safetensors",
+  "lora": {
+    "name": "minimax_h3_turbo_v4_step600_ema_pruned_rawkeys.safetensors",
+    "node": "MiniMaxH3TurboLoRA",
+    "strength": 1.0,
+    "injection_required": true
+  },
+  "acceleration": {
+    "process_flag": "--use-sage-attention",
+    "lowvram": true,
+    "fp16_vae": true
+  },
+  "workflows": {
+    "t2v": "h3-t2v-640x384-8steps.json",
+    "r2v": "h3-r2v-640x384-8steps.json"
+  },
+  "long_video": {
+    "director_role": "timeline-orchestration",
+    "motion_context_role": "av-latent-continuation",
+    "first_segment_workflow": "h3-director-first-segment-av-latent-640x384-8steps.json",
+    "continuation_workflow": "h3-motion-context-segment-640x384-8steps.json",
+    "context_length": 22,
+    "audio_context_length": 24,
+    "same_process": false,
+    "minimum_gate_seconds": 15,
+    "runtime_status": "real-platform-15s-v3-passed-2026-08-17",
+    "latent_contract": "save output/long-video/<job-id>/context/clip_<index>.safetensors and load previous index"
+  },
+  "selection_gate": {
+    "status": "closed",
+    "selected_candidate": "pruned-int8-drbaph-pruned-rawkey",
+    "short_segment_required": true,
+    "unselected_models_long_video_matrix": false,
+    "next_specialization": "selected-base-only-director-motion-context-15s"
+  },
+  "audio": {
+    "dialogue_provider": "CosyVoice3",
+    "asr_gate": "Whisper small + human listening",
+    "native_h3_audio_final_dialogue": false
+  },
+  "evidence": [
+    "test-runs/2026-08-17-h3-provider-t2v-smoke/REPORT.md",
+    "test-runs/2026-08-18-h3-destiny-ch01-plugin-ab/REPORT.md",
+    "test-runs/2026-08-18-h3-destiny-ch01-hd-lora-gate/REPORT.md",
+    "test-runs/2026-08-17-h3-platform-long-video-15s-real-gpu-v3/REPORT.md",
+    "test-runs/2026-08-18-h3-destiny-ch01-audio-gate/REPORT.md"
+  ]
+}

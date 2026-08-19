@@ -1,276 +1,256 @@
 ---
 name: novel-to-comic
-description: 小说转漫画引擎（v1.0） - 将中文长篇小说章节转换为东亚风格黑白漫画（水墨、B5判、含对话框/旁白/SFX）。支持改编层（1句=1格粒度控制）、DS v4 Pro 编剧+ Kimi K2.7 分镜+配文全流程、Step Image Edit 2 批量生图、多模态视觉审核、古籍竖排对话框、排版输出 PDF。
-version: 1.0.0
-metadata:
-  working_dir: .
-  requires:
-    env:
-      - STEP_API_KEY
-      - KIMI_API_KEY
+description: Use when converting Chinese fiction chapters into manga/manhua adaptation layers, storyboards, image-generation panels, visual audits, lettering/layout configs, or debugging quality problems in the novel-to-comic pipeline.
 ---
 
-# 小说转漫画引擎（v1.0 — 2026-06-17）
+# 小说转漫画引擎
 
-将中文小说章节转换为完整漫画分镜稿的端到端工具链。
+这个 skill 的目标是把中文小说章节稳定转成漫画生产资产，而不是“压缩剧情”。核心原则：**不要替小说做取舍，让小说自己决定分镜数量。**
 
-## 工作流程
-
-```
-小说原文 → DS v4 Pro 编剧（改编层） → Kimi K2.7 分镜脚本 → Step Image Edit 2 批量生图 → 视觉审查 → Kimi 配文排版 → PDF 输出
-```
-
-### Step 0: 准备工作
+默认工作目录：
 
 ```bash
-# 启动本地多模态网关（API key 统一管理，不经过 CC）
-python3 scripts/mm-gateway.py
+cd /Volumes/AJW-Data/Projects/novel-to-comic-engine
 ```
 
-### Step 1: 读取小说
-读取 `projects/<项目名>/chapter_XX.md`，理解剧情结构、角色、情绪转折。
+不要读取、展示或提交 `config.yaml`。API key 只能来自环境变量、本地网关或用户已经配置好的文件。
 
-### Step 1.5: 改编层（DS v4 Pro 编剧，⚠️ 关键，不可跳过）
+## 硬规则
 
-**这是漫画编剧步骤，由 DS v4 Pro（DeepSeek v4 Pro）执行。**
-文字剧情创作是 DS v4 Pro 的强项（深度理解文本内涵、精确控制叙事节奏、旁白连贯性）。
+1. **改编层不可跳过。** 先生成 `adaptation_chXX.md`，再生成 `storyboard_chXX.py`。
+2. **粒度唯一标准：1 句原文 = 1 个改编条目 = 1 格画面。** 不使用“1-2句=1格”或“比例 >= 0.5”的旧规则。
+3. **不可合并跨段落、跨情绪、跨动作、跨对白的句子。** 如果原文句子很短，也先保留一格；后续排版可以合页，但不能在改编层吞句子。
+4. **生图前必须过分镜审核和 dry-run。** 没有通过前不要调用真实生图。
+5. **生图输出目录必须显式指定。** 不依赖 `generate_panels.py` 默认输出到 Desktop；使用 `--out projects/<项目>/<章节>/panels` 并让排版读取同一路径。
+6. **最终排版只认 `BUBBLE_CONFIG`。** `adapt_to_storyboard.py` 产出的 `BUBBLES` 是中间数据，不能当成 `layout_chapter.py` 会自动读取的最终配文。
+7. **同一项目只能有一套角色描述。** 不要同时维护 `QI`、`Q`、storyboard 内不同版本主角外貌；先确定项目级角色表，再引用。
+8. **禁止真人照片感。** 画风必须是东亚黑白漫画/2D ink/manhua，不得把 `realistic`、`photograph`、`photo-realistic`、`live-action`、`写实风格` 当正向画风词。需要写成 `NOT photograph, NOT photorealistic, NOT realistic face`。
+9. **文字层只由排版处理。** prompt 不得要求生图模型画可读文字、帖子、报告正文、标题、门牌、SFX 字样；这些全部进入 `BUBBLE_CONFIG`。
+10. **storyboard 必须与改编层 1:1 对齐，不得吞并。** 改编层 N 条 → storyboard 必须 N 格，每条改编条目对应独立一格。排版可以合页（一页放多格），但 storyboard 层绝不能把多句并一格。交付前必须跑 `qa_chapter.py` 并人工抽验：改编层条目数 == storyboard 格数 == PAGES 引用 panel 数。
+11. **禁用摄影感词诱导写实漂移。** prompt 不得用「模糊虚化/景深/细腻光影/皮肤纹理/毛孔」等摄影感词（会诱导生图模型走真人写实），改用「块面化高对比明暗/G笔粗线条勾勒轮廓/平面色块」。面部特写格尤其要显式写「纯2D漫画线条无写实皮肤纹理无毛孔」。
+12. **文字载体题材必须强化否定。** 屏幕/日历/时钟/报纸/海报/论坛/报告格，prompt 必须写「绝对不画任何汉字字母数字、纯灰色模糊矩形块」——光写「无可读文字」不够，Step Image Edit 2 对文字载体题材服从度低，需更强措辞 + 明确「纯模糊块占位」。
 
-在生成分镜脚本之前，必须先产出 `projects/<项目名>/adaptation_chXX.md`，包含：
-- 选取的小说原文段落（标注来源行号）
-- 改编后的漫画旁白/对白（每条独立成段）
-- 情绪标注（恐惧/麻木/平静/爆发等）
 
-#### 约束一：禁止随意截取
 
-| 规则 | 说明 |
-|------|------|
-| **以"情绪单元"为单位截取** | 每个情绪转折点（如"恐惧→麻木→习惯"）作为一个单元，不拆散 |
-| **保留完整因果链** | "因为 A 所以 B"必须同时出现，不可只保留 B |
-| **对白保留完整语义** | 截取对白必须保留说话人的意图和情绪，不可只取半句 |
-| **内心戏必须配画面** | "他感到恐惧"这类内心描写，必须有对应的视觉画格（如面部特写/抽象画面），不能只放旁白 |
-| **标注来源** | 每条改编文本必须标注对应的小说原文位置（如 `[原文 L23-L28]`），方便回溯 |
+## 模型路由
 
-#### 约束二：旁白连贯性（朗读不脱节）
+| 环节 | 首选 | 说明 |
+| --- | --- | --- |
+| 改编层/编剧 | DS v4 Pro | 负责文本理解、逐句改编、旁白与对白连续性 |
+| 分镜/画面 prompt | Kimi K2.7 | 负责画面感、镜头、构图、情绪递进 |
+| 分镜结构审核 | GLM 5.2（火山 coding 端点） | 纯文本 JSON 审核。注意：`kimi-k2.7-code` 做**纯文本结构化 JSON 审核**会强制 thinking、输出常空，不用于此环节；但它的**识图能力**正常（见下行） |
+| 生图 | Step Image Edit 2 | 通过本地 `mm-gateway` 或现有脚本调用 |
+| 视觉审核（识图） | Step 3.7 Flash（首选）/ Kimi K2.7（火山方舟，备选） | 入口 `scripts/audit_panels.py`，内部走 `comic_engine/auditor.py` + `config.yaml` 的 `providers.vision`。默认 `step-3.7-flash`（stepfun 官方）。Kimi K2.7 走火山方舟 `kimi-k2.7-code`，**多模态可识图**，作为 Step 额度耗尽时的备选。看实际图片是否匹配，不用旧 `scan_all_panels.py` 作为主流程 |
+| 排版配文 | Kimi K2.7 或人工校正 | 产出 `PAGES` + `BUBBLE_CONFIG`，再本地渲染 |
 
-漫画旁白不是孤立的，而是**一条贯穿全页的叙事线**。
+> **识图模型能力**：
+> - **GLM 系列（5.1 / 5.2 / 火山 coding 端点）**：仅支持文本输入，不支持图片，传入图片返回 `400 Model only support text input`。不要用 GLM 识图。
+> - **Kimi K2.7（火山方舟 `kimi-k2.7-code`）**：**多模态，支持识图**（已验证：三格漫画人物特征/场景/对视关系均识别准确）。走火山方舟 OpenAI 兼容端点 `https://ark.cn-beijing.volces.com/api/coding/v3`，Anthropic 兼容端点 `https://ark.cn-beijing.volces.com/api/coding`。注意 K2.7 做**纯文本结构化 JSON 审核**会思考失控输出空，但识图不受影响。
+> - **Step 3.7 Flash（`step-1o-turbo-vision`）**：多模态识图，stepfun 官方端点，视觉审核首选。
+> - 任何看图环节（画格审核、整页压脸抽查、OCR）走 Step 3.7 Flash 或 Kimi K2.7，不要用 CC 当前主模型直接读 PNG（若主模型是 GLM 会 400）。
 
-| 规则 | 说明 |
-|------|------|
-| **顺序读取等于完整故事** | 把所有旁白按页面顺序连起来朗读，必须能听懂完整故事，不可跳跃、不可缺因果 |
-| **每页旁白 ≤ 3 条** | 超过 3 条旁白的页面，必须检查是否信息过载；过多信息应拆到后续页面 |
-| **对白→旁白的过渡要自然** | 上一格的对白结尾与下一格的旁白开头，必须在语义上有承接关系 |
-| **避免"跳接"** | 如果两格之间时间跨度 > 1 小时，必须有过渡画面或旁白说明（如"三天后""第二天"） |
-| **终幕旁白必须收束** | 最后一页的旁白必须呼应本章主题，不可突然截断或引入新信息 |
-| **旁白长度均衡** | 单条旁白 10-30 字为佳，最多不超过 50 字。过长的旁白必须拆成多条 |
+分镜审核优先命令：
 
-#### 改编层模板
+```bash
+python3 scripts/audit_storyboard.py projects/<项目>/<章节>/storyboard_chXX.py --provider volc --volc-model glm-5.2
+```
+
+如果火山 key 未在当前 shell 中配置，先说明阻塞点；不要切到 `kimi-k2.7-code` 硬跑结构化审核。
+
+## 产物契约
+
+### `adaptation_chXX.md`
+
+每条改编条目必须能追溯到原文句子：
 
 ```markdown
-# 第三章 改编层
-
-## 情绪单元 1：恐惧→麻木→习惯
-- 来源：[原文 L3-L9]（3 句）
-- 改编旁白（3 条 = 3 格，每句 1 格）：
-  1. "第一次是恐惧，像冰冷的潮水。" [L3-L5]
-  2. "第二次，心跳慢了一拍。" [L7]
-  3. "第三次，只是在等一个结果。" [L9]
-- 画面规划：3 格面部特写，从惊恐→呆滞→平静
-- 情绪：恐惧 → 麻木 → 习惯
-
-## 粒度自检
-- 原文句子数：3
-- 改编旁白条目数：3
-- 比例：3/3 = 1.0 ≥ 0.5 ✓
-- 无条目覆盖超过 2 句 ✓
+格号|角色|配文|情绪|审核类型|画面关键词|来源
+001|narration|失业第三个月，他学会扮演正常人。|麻木|character|地铁早高峰/疲惫眼神|L1
+002|祁思远|今天也要装得像个人。|伪装|character|手扶栏杆/低头|L2
 ```
 
-#### 改编层自检清单
+字段要求：
 
-输出改编层后，逐项检查：
+- `格号` 连续递增，推荐 `001` 起。
+- `角色` 用 `narration`、主角名、具体角色名或超自然角色名。
+- `配文` 是最终可能进入气泡/旁白的文字，避免塞入过长解释。
+- `情绪` 必须体现相邻格渐变。
+- `审核类型` 只能用 `character`、`supernatural`、`hand`、`scene`、`abstract`。
+- `画面关键词` 写具体可见元素，避免“黑暗扩张”“命运感”这种难画抽象词。
+- `来源` 写原文行号或句号编号。
 
-- [ ] 朗读所有旁白，能听懂完整故事吗？
-- [ ] 每个情绪单元有明确的"起因→发展→结果"吗？
-- [ ] 对白和旁白之间有语义承接吗？
-- [ ] 时间跨度 > 1 小时的地方有过渡吗？
-- [ ] 最后一页的旁白是否收束本章主题？
-- [ ] 没有任何旁白是孤立信息（前后没有因果关联的句子）？
-- [ ] **粒度检查**：旁白条目数 ≥ 原文句子数 ÷ 2？
-- [ ] **粒度检查**：没有旁白条目覆盖超过 2 句原文？
-- [ ] **粒度检查**：每一句话都有对应的画格？
+自检：
 
-#### 核心约束：1 句原文 = 1 格画面（v0.5 改进）
+- 改编条目数 = 原文句子数。
+- 每句原文都有独立格号。
+- 每条只覆盖 1 句原文。
+- 情绪单元有起因、发展、结果。
+- 旁白顺序朗读能听懂完整故事。
 
-这是最重要的节奏约束，每句原文独立成格。
+### `storyboard_chXX.py`
 
-| 规则 | 说明 |
-|------|------|
-| **每 1 句小说原文 = 1 个改编条目 = 1 格画面** | 不允许合并超过 1 句的原文到同一个旁白条目里 |
-| **旁白条目数 = 原文句子数** | 改编后的旁白条目数必须等于原文句子总数 |
-| **对话逐句独立** | 每句对白（含说话人动作）独立成格 |
-| **不合并跨段落的句子** | 不同段落之间的句子，即使语义相关，也不允许合并 |
-
-**示例（v0.5 标准）**：
-
-```
-原文（3句）：
-  他坐在靠窗的位置，涮着羊肉。
-  店里热气腾腾，人声鼎沸。
-  终于又像个正常人了。
-
-改编旁白（3条 = 3格，1句1格）：
-  1. "他坐在靠窗的位置，涮着羊肉。" → 1格（人物动作）
-  2. "店里热气腾腾，人声鼎沸，锅底咕嘟咕嘟地冒着泡。" → 1格（环境氛围）
-  3. "终于又像个正常人了。" → 1格（内心/表情特写）
-```
-
-**反例（不允许）**：
-```
-原文（3句）合并成1条旁白：
-  "他坐在靠窗涮羊肉，店里热气腾腾人声鼎沸，终于像个正常人。" 
-  → 这是3句话的信息塞进1格，违反了 1-2句=1格 的规则
-```
-
-**改编层自检（v0.5）**：
-- 改编旁白条目数 = 原文句子数？（必须是 1:1）
-- 是否有任何旁白条目覆盖了超过 1 句原文？
-- 每一句话都有对应的画格吗？
-
-### Step 2: 生成分镜脚本（Kimi K2.7）
-基于改编层生成分镜脚本 `storyboard_chXX.py`。
-
-**模型：Kimi K2.7** — 画面感强，英文 prompt 精准。
-
-⚠️ **重要**：Python f-string 中必须使用 `{Q}` 和 `{S}`，不能写成 `Q,` 或 `S,`
-
-⚠️ **情绪连续性**：相邻画格的角色情绪必须是渐变而非跳跃。每格 prompt 需标注当前情绪状态（表情/眼神/肢体语言），确保上下格之间情绪过渡自然。
-
-⚠️ **回忆场景年龄**：回忆/闪回中的角色必须标注当时的年龄（如 `young boy version of {Q}, age 7-8`），不能用成年版 `{Q}`，否则模型会画出成年人在童年场景中。
+必须是可导入 Python 文件，定义 `Q`、`S`、`PANELS`：
 
 ```python
-# 分镜脚本模板（中文prompt，信息密度高，不超过250字）
 Q = "东亚青年，25岁，细金属框眼镜，黑色短发齐刘海，米色休闲西装，深蓝色V领衬衫，旧黑色双肩背包，疲惫空洞的眼神，黑眼圈，苍白皮肤。"
-S = "Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
+S = "东亚黑白漫画，G笔线条，高对比灰度，2D漫画，非照片，非写实人脸。"
 
 PANELS = [
-    ("P001", f"{Q}, standing before mirror, hollow eyes, {S}", "character"),
-    ("P002", f"Subway interior, {Q} gripping rail, {S}", "scene"),
+    ("P001", f"{Q}站在地铁车厢里，低头抓紧扶手，眼神麻木，冷白顶灯压在脸上，{S}", "character"),
 ]
 ```
 
-### Step 3: 批量生图
-```bash
-python3 scripts/generate_panels.py projects/<项目名>/storyboard_chXX.py
+要求：
+
+- `PANELS` 元组必须是 `(panel_id, prompt, audit_type)` 三元素。
+- `panel_id` 与 `PAGES`、`BUBBLE_CONFIG`、图片文件名完全一致。
+- prompt 优先中文，目标 120 字以内（不含 `Q/S` 展开），接近 400 字节要主动压缩。
+- prompt 必须保留 `{S}` 或等价的东亚漫画风格约束；压缩 prompt 时不能先砍画风后缀。
+- 回忆/童年场景不得直接使用成年版 `{Q}`，必须写清当时年龄。
+- 超自然角色必须包含“无五官、无嘴、无鼻、无牙齿、只有发光眼窝/剪影/烟雾边缘”等否定约束。
+- 模糊反派、房东、租客、无名路人优先剪影/背影/虚影；不要幻想具体五官。
+
+### `pages_config_chXX.py`
+
+最终排版文件只需要：
+
+```python
+PAGES = [
+    ("full", ["P001"]),
+    ("2x2", ["P002", "P003", "P004", "P005"]),
+]
+
+BUBBLE_CONFIG = {
+    "P001": [("narration", "失业第三个月，他学会扮演正常人。", "bottom")],
+    "P002": [("normal", "今天也要装得像个人。", "center")],
+}
 ```
 
-**模型：Step Image Edit 2**（通过本地 mm-gateway 调用）
+注意：
 
-- 默认断点续传（跳过已有画格）
-- `--concurrent N`：并发 N 路（默认串行）
-- `--dry-run`：预览不生成
-- `--force`：强制覆盖已有画格
+- 不要输出 `BUBBLES` 当最终排版变量。
+- 气泡位置用 `bottom` 时会走横排旁白条；其他位置会走竖排对话框。
+- 每个 `PAGES` 引用的 panel 都必须存在图片。
 
-### Step 4: 视觉审查
-```bash
-python3 scripts/scan_all_panels.py projects/<项目名>/panels
-```
+## 推荐流程
 
-**模型：Step 3.7 Flash 识图**（降级方案）
-**首选：Kimi K2.7 识图**（有额度时）
-
-逐格扫描实际画面内容，输出 panel_descriptions.json 用于后续配文匹配。
-
-### Step 5: 修复问题画格
-```bash
-python3 scripts/fix_panel.py projects/<项目名>/panels/P001.png "修正后的 prompt"
-```
-
-### Step 6: 配文 + 排版（Kimi K2.7）
-Kimi K2.7 根据实际画面描述和旁白列表，生成 `pages_config_chXX.py`（含 PAGES 和 BUBBLE_CONFIG）。
+### 1. 初始化或进入项目
 
 ```bash
-python3 scripts/layout_chapter.py projects/<项目名>/pages_config_chXX.py
+python3 scripts/init_project.py <项目名>
 ```
 
-输出：PNG 页面 + B5判 PDF。
+章节目录推荐使用：
 
-## Prompt 规范
+```text
+projects/<项目名>/chXX/
+```
 
-1. **画风后缀**（固定）：
-   ```
-   东亚漫画，黑白水墨，G笔线条，高对比度灰度，写实风格。
-   ```
+### 2. 生成改编层
 
-2. **角色外貌描述模板（固定，不可修改，中文）**：
-   ```
-   东亚青年，25岁，细金属框眼镜，黑色短发齐刘海，
-   米色休闲西装，深蓝色V领衬衫，旧黑色双肩背包，
-   疲惫空洞的眼神，黑眼圈，苍白皮肤。
-   ```
+读取 `projects/<项目名>/<章节>/chapter_XX.md`，按“1句=1格”生成 `adaptation_chXX.md`。生成后先做条目数、来源、情绪连续性检查。
 
-3. **中文 prompt 规则**：
-   - 全部用中文写，信息密度高，Step 模型理解精准
-   - 不超过 250 字（超出会触发 API 限制）
-   - 关键视觉元素 + 构图 + 情绪标注
+如果使用转换脚本：
 
-3. **超自然实体约束**：
-   - `ONLY empty glowing cyan eye sockets, NO facial features, NO mouth, NO nose, NO teeth`
-   - `semi-transparent shadowy form, edges dissolving into smoke`
+```bash
+python3 scripts/adapt_to_storyboard.py projects/<项目名>/<章节>/adaptation_chXX.md projects/<项目名>/<章节>/storyboard_chXX.py
+```
 
-4. **场景安全**：
-   - 空旷场景：`NO people, NO crowd`
-   - 废弃儿童设施：`NO children`
-   - 手部特写：`simple normal hand shape, five fingers`
+脚本会生成 `BUBBLES`，后续仍要整理成 `pages_config_chXX.py` 的 `BUBBLE_CONFIG`。
 
-5. **f-string 变量替换规则**：
-   - 必须使用 `{Q}` 和 `{S}`，不能写成 `Q,` 或 `S,`
-   - `generate_panels.py` 在运行时自动替换 `{Q}` 和 `{S}` 为实际值
+### 3. 审核分镜
 
-## 排版规范
+先确认 Python 可导入：
 
-- 尺寸：B5判 182mm × 257mm @ 150dpi
-- 字体：`/System/Library/Fonts/STHeiti Medium.ttc`
-- 对话框文字 40px，旁白 32px，SFX 88px，标题 64px
-- 所有文字必须有白色描边（3层），确保可读性
-- **对话框**：古籍竖排（从上往下读，从右往左列），黑框透明底，角落布局不遮挡人脸
-- **旁白**：横排，底部半透明黑底白字
-- **超自然对话框**：白框透明底 + 白字黑描边
-- 布局类型：`full` / `2x2` / `1x2` / `hero` / `triple-row`
+```bash
+python3 -m py_compile projects/<项目名>/<章节>/storyboard_chXX.py
+```
 
-## 安全提示
+再做模型审核：
 
-- 不要读取或展示用户的 `config.yaml`（含 API key）
-- 大文件输出默认放在外置硬盘
-- API 调用可能触发 429 限流，脚本已内置重试机制
+```bash
+python3 scripts/audit_storyboard.py projects/<项目名>/<章节>/storyboard_chXX.py --provider volc --volc-model glm-5.2
+```
 
-## 快速命令参考
+如果生成了 `_fixes.json`，先应用或手动合并修正，再进入 dry-run。
 
-| 操作 | 命令 |
-|------|------|
-| 初始化项目 | `python3 scripts/init_project.py <项目名>` |
-| 生成画格 | `python3 scripts/generate_panels.py <分镜脚本路径>` |
-| 预览不生成 | `python3 scripts/generate_panels.py <分镜脚本路径> --dry-run` |
-| 强制覆盖 | `python3 scripts/generate_panels.py <分镜脚本路径> --force` |
-| 视觉审核 | `python3 scripts/audit_panels.py <画格目录>` |
-| 修复画格 | `python3 scripts/fix_panel.py <画格路径> "新 prompt"` |
-| 排版输出 | `python3 scripts/layout_chapter.py <排版配置>` |
-| 审核报告 | `python3 scripts/audit_panels.py <画格目录> --output report.md` |
+### 4. Dry-run，不生图
 
----
+```bash
+python3 scripts/generate_panels.py projects/<项目名>/<章节>/storyboard_chXX.py --dry-run --out projects/<项目名>/<章节>/panels
+```
 
-*最后更新: 2026-06-19*
+只有 dry-run 通过，才真实生成。
 
----
+### 5. 批量生图
 
-## 版本历史
+```bash
+python3 scripts/generate_panels.py projects/<项目名>/<章节>/storyboard_chXX.py --out projects/<项目名>/<章节>/panels
+```
 
-| 版本 | 日期 | 变更 |
-|------|------|------|
-| **v1.0.1** | 2026-06-19 | 修正模型路由：改编层（文字剧情）改为 DS v4 Pro，分镜/配文保持 Kimi K2.7 |
-| **v1.0.0** | 2026-06-17 | 古籍竖排对话框（从上往下、从右往左列），旁白保持横排；回忆场景年龄特征约束；女性剪影特征强化；对话框透明底黑框；文字白色描边；字体缩小适配；对话框角落布局不遮挡人脸 |
-| **v0.5.2** | 2026-06-17 | 回忆场景年龄特征约束：闪回/童年场景必须标注角色年龄，禁用成年版 {Q} |
-| **v0.5.1** | 2026-06-16 | 情绪连续性约束：相邻画格角色情绪渐变，每格 prompt 显式标注情绪状态 |
-| **v0.5.0** | 2026-06-16 | Kimi K2.7 全流程（编剧+分镜+配文），1句=1格粒度，{Q}/{S} 自动替换，角色描述固定模板 |
-| v0.4.0 | 2026-06-11 | 5种新布局类型，DS v4 Pro 改编层模板，合并脚本 |
-| v0.3.0 | 2026-06-08 | 第四章排版，补全缺失旁白 |
-| v0.2.0 | 2026-06-07 | 视觉审核模块，自动修复，v7 CHECKLIST |
-| v0.1.0 | 2026-06-09 | 初版：改编层→分镜→生图→排版→PDF
+已有图片默认跳过；需要覆盖时才加 `--force`。
+
+### 6. 视觉审核与修复
+
+```bash
+python3 scripts/audit_panels.py projects/<项目名>/<章节>/panels
+```
+
+发现画面不匹配时，优先修 prompt 或重生单格：
+
+```bash
+python3 scripts/fix_panel.py projects/<项目名>/<章节>/panels/P001.png "修正后的 prompt"
+```
+
+不要为了迁就错误图片而硬改剧情配文。
+
+### 7. 排版输出
+
+创建 `pages_config_chXX.py`，然后：
+
+```bash
+python3 scripts/layout_chapter.py projects/<项目名>/<章节>/pages_config_chXX.py --panels projects/<项目名>/<章节>/panels --output projects/<项目名>/<章节>/pages
+```
+
+排版后先跑成片 QA：
+
+```bash
+python3 scripts/qa_chapter.py projects/<项目名>/<章节>/pages_config_chXX.py --panels projects/<项目名>/<章节>/panels
+```
+
+## 常见失败点
+
+| 症状 | 根因 | 处理 |
+| --- | --- | --- |
+| 剧情被压缩/吞并 | storyboard 层把多句并一格（改编层1句1条但分镜吞了） | 对齐改编层条目数==storyboard格数，每条独立一格，参考 ch03 v3 补格流程 |
+| 审核全 PASS 但成片有问题 | `auditor.py` 旧判定 `or "通过" in content` 让"通过"二字一票否决所有 issues | 已修复：过滤纯结论行+否式行后 issues 非空即 FAIL；勿回退此逻辑 |
+| K2.7 识图偶发空响应 | 思考型模型 content 偶尔为空 | 简短描述型 prompt + 重试；auditor.py 已标 UNKNOWN 不当 PASS |
+| 配文没有进入画面 | 写了 `BUBBLES` 但 layout 读 `BUBBLE_CONFIG` | 生成或转换 `pages_config_chXX.py` |
+| 图片生成在 Desktop，排版找不到 | 未显式传 `--out` | 生图与排版都使用项目内同一 panels 目录 |
+| 主角外貌漂移 | 多套 Q/QI 描述并存 | 保留单一项目级 `Q` |
+| 超自然角色长人脸 | prompt 否定约束不够 | 加“无五官/无嘴鼻牙/剪影/发光眼窝” |
+| 画面混入真人照片脸 | 正向使用 `realistic/写实风格` 或摄影感词（虚化/景深/细腻光影） | 删除正向写实词+摄影感词，面部特写格显式写「纯2D漫画线条无写实皮肤纹理无毛孔」 |
+| 图内出现乱码字/伪标题 | 让生图模型画文字 | prompt 写“无可读文字”，真实文字进 `BUBBLE_CONFIG` |
+| 屏幕/日历/时钟/论坛格仍有可读字 | 光写「无可读文字」不够，Step 对文字载体服从度低 | 强化「绝对不画任何汉字字母数字、纯灰色模糊矩形块」+ 明确载体用模糊块占位 |
+| 抽象画面乱飞 | prompt 太虚 | 改成具体可见构图、物体、光线和镜头 |
+| 识图报 `400 Model only support text input` | 用了 GLM 5.x / CC 主模型（GLM 5.2）直接读 PNG | 改走 `audit_panels.py`（Step 3.7 Flash 或 Kimi K2.7），GLM 仅文本不识图 |
+| K2.7 CC 实例报 `effort got xhigh` | `settings.kimi-k27-code.json` 里 `effortLevel: max` 被 CC 映射成 `xhigh`，火山方舟不认 | 把 `effortLevel` 改为 `high` |
+| 识图脚本崩 `unterminated string literal` | `scripts/step-vision.sh` 双引号 here-string + 单引号 python + `$` 插值冲突 | 不要用该脚本；走 `audit_panels.py` 或在 python 里用 `os.environ` 读 key |
+| 识图/生图报 `SSL: UNEXPECTED_EOF` 或 `IncompleteRead` | python `urllib` 默认不读 `HTTPS_PROXY`，代理环境 TLS 断连 | `generator.py`/`auditor.py` 已加 `ProxyHandler`；偶发失败重试即可 |
+| 生图 401 Incorrect API key | config 里 step key 失效 | 用 `STEP_API_KEY` 环境变量传有效 key（`fix_panel.py`/`generate_panels.py` 已支持环境变量优先） |
+
+## 结束前检查
+
+完成任意章节后至少汇报：
+
+- 改编条目数、原文句子数、是否 1:1。
+- **storyboard 格数 == 改编条目数**（剧情完整性硬指标，storyboard 不得吞并改编条目）。
+- `storyboard_chXX.py` 是否通过 `py_compile`。
+- `audit_storyboard.py` 是否跑过，使用了哪个 provider/model。
+- `generate_panels.py --dry-run` 是否通过。
+- 实际生成画格数量、审核问题数量。
+- `pages_config_chXX.py` 是否含 `PAGES` 和 `BUBBLE_CONFIG`。
+- `qa_chapter.py` 是否通过；如果未通过，说明是缺图、漏配文、图文顺序或排版节奏问题，不要直接交付 PDF。
+- **跑 `audit_panels.py --provider volc-k27` 抽验成片**（旧宽松审核会误判全 PASS，K2.7 严格审核才能抓真人脸/图内文字/压脸真问题）。
+
+最后更新：2026-06-22

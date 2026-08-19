@@ -41,6 +41,9 @@ class ComicLayoutEngine:
         font_light = _resolve_font("light", project.get("font_light",
             "/System/Library/Fonts/STHeiti Light.ttc"))
 
+        self.font_title_path = font_title
+        self.font_body_path = font_body
+        self.font_light_path = font_light
         self.font_title = ImageFont.truetype(font_title, 64)
         self.font_bubble = ImageFont.truetype(font_body, 40)
         self.font_small = ImageFont.truetype(font_body, 32)
@@ -274,40 +277,125 @@ class ComicLayoutEngine:
             self.draw_panel_border(draw, boxes[i])
         return boxes[:len(names)]
 
-    def draw_bubble(self, draw, box, style, text, tail_dir="bottom"):
+    def _fit_font(self, font_path, start_size, min_size, fits):
+        """Return the largest font size that satisfies the supplied predicate."""
+        for size in range(start_size, min_size - 1, -2):
+            font = ImageFont.truetype(font_path, size)
+            if fits(font):
+                return font
+        return ImageFont.truetype(font_path, min_size)
+
+    def _vertical_metrics(self, text, font, max_h, col_gap=10):
+        bbox = font.getbbox("国")
+        ch_w = bbox[2] - bbox[0] if bbox else font.size
+        ch_h = bbox[3] - bbox[1] if bbox else font.size
+        max_chars_per_col = max(1, max_h // (ch_h + 2))
+        n_cols = max(1, (len(text) + max_chars_per_col - 1) // max_chars_per_col)
+        return ch_w, ch_h, n_cols
+
+    def _place_overlay_box(self, panel_box, box_w, box_h, position):
+        x1, y1, x2, y2 = panel_box
+        inset = 12
+        position = (position or "auto").lower()
+        positions = {
+            "top-left": (x1 + inset, y1 + inset),
+            "top-right": (x2 - box_w - inset, y1 + inset),
+            "bottom-left": (x1 + inset, y2 - box_h - inset),
+            "bottom-right": (x2 - box_w - inset, y2 - box_h - inset),
+            "left": (x1 + inset, (y1 + y2 - box_h) // 2),
+            "right": (x2 - box_w - inset, (y1 + y2 - box_h) // 2),
+            "top": ((x1 + x2 - box_w) // 2, y1 + inset),
+            "center": ((x1 + x2 - box_w) // 2, (y1 + y2 - box_h) // 2),
+        }
+        if position in positions:
+            bx, by = positions[position]
+        else:
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+            corners = [
+                (x1 + inset, y1 + inset),
+                (x2 - box_w - inset, y1 + inset),
+                (x1 + inset, y2 - box_h - inset),
+                (x2 - box_w - inset, y2 - box_h - inset),
+            ]
+            bx, by = max(
+                corners,
+                key=lambda p: abs(p[0] + box_w // 2 - cx) + abs(p[1] + box_h // 2 - cy),
+            )
+        bx = max(x1 + inset, min(bx, x2 - box_w - inset))
+        by = max(y1 + inset, min(by, y2 - box_h - inset))
+        return bx, by
+
+    def draw_center_label(self, draw, box, text, font_path, start_size, fill=None, outline=None, width=4):
+        """Draw fitted horizontal title/SFX text centered in a panel."""
+        if fill is None:
+            fill = self.c_black
+        if outline is None:
+            outline = self.c_white
+        x1, y1, x2, y2 = box
+        max_w = int((x2 - x1) * 0.82)
+        max_h = int((y2 - y1) * 0.35)
+
+        def fits(font):
+            lines = text.split("\n")
+            widths = []
+            total_h = 0
+            for line in lines:
+                bbox = font.getbbox(line)
+                widths.append(bbox[2] - bbox[0])
+                total_h += bbox[3] - bbox[1] + 4
+            return max(widths or [0]) <= max_w and total_h <= max_h
+
+        font = self._fit_font(font_path, start_size, 28, fits)
+        lines = text.split("\n")
+        line_boxes = [font.getbbox(line) for line in lines]
+        line_heights = [(b[3] - b[1]) for b in line_boxes]
+        total_h = sum(line_heights) + 4 * (len(lines) - 1)
+        y = (y1 + y2 - total_h) // 2
+        for line, bbox, lh in zip(lines, line_boxes, line_heights):
+            lw = bbox[2] - bbox[0]
+            x = (x1 + x2 - lw) // 2
+            self.draw_text_outline(draw, x, y, line, font, fill=fill, outline=outline, width=width)
+            y += lh + 4
+
+    def draw_bubble(self, draw, box, style, text, position="auto", tail_dir="bottom"):
         """古籍竖排对话框：从上往下读，从右往左列"""
         x1, y1, x2, y2 = box
-        pad = int(self.font_bubble.size * 0.6)
+        position = position or "auto"
 
-        # 估算框大小（竖排）
-        ch_w = self.font_bubble.getbbox("国")[2] - self.font_bubble.getbbox("国")[0]
-        ch_h = self.font_bubble.getbbox("国")[3] - self.font_bubble.getbbox("国")[1]
-        col_h = y2 - y1 - pad * 2
-        max_ch_per_col = max(1, col_h // (ch_h + 2))
-        total_ch = len(text)
-        n_cols = (total_ch + max_ch_per_col - 1) // max_ch_per_col
-        box_w = min(n_cols * (ch_w + 8) + pad * 2, int((x2 - x1) * 0.50))
-        box_h = min(col_h + pad * 2, y2 - y1 - 10)
+        if style in ("title", "sfx") and position == "center":
+            font_path = self.font_title_path if style == "title" else self.font_body_path
+            start_size = 72 if style == "title" else 88
+            self.draw_center_label(draw, box, text, font_path, start_size)
+            return
+        # 普通/超自然对白的 center：尊重 BUBBLE_CONFIG 居中竖排。
+        # 长文本 center 会在 render_pages 层提前转 bottom 横排条(避免压脸)，
+        # 走到这里的是短文本，单列窄框居中不压脸。
 
-        # 日漫策略：选4个角落中离中心最远的可放置位置
-        cx = (x1 + x2) // 2
-        cy = (y1 + y2) // 2
-        corners = [
-            (x1 + 10, y1 + 10, "top-left"),
-            (x2 - box_w - 10, y1 + 10, "top-right"),
-            (x1 + 10, y2 - box_h - 10, "bottom-left"),
-            (x2 - box_w - 10, y2 - box_h - 10, "bottom-right"),
-        ]
-        best = corners[0]
-        best_dist = 0
-        for bx, by, pos in corners:
-            if bx < x1 or by < y1 or bx + box_w > x2 or by + box_h > y2:
-                continue
-            dist = abs(bx + box_w//2 - cx) + abs(by + box_h//2 - cy)
-            if dist > best_dist:
-                best_dist = dist
-                best = (bx, by, pos)
-        bx, by, _ = best
+        font_path = self.font_title_path if style == "title" else self.font_body_path
+        start_size = 64 if style == "title" else 40
+        if style == "sfx":
+            start_size = 72
+
+        panel_w = x2 - x1
+        panel_h = y2 - y1
+        max_box_w = int(panel_w * 0.78)
+        max_box_h = int(panel_h * 0.92)
+
+        def fits(font):
+            pad = int(font.size * 0.6)
+            max_h = max(40, max_box_h - pad * 2)
+            ch_w, _ch_h, n_cols = self._vertical_metrics(text, font, max_h)
+            needed_w = n_cols * (ch_w + 10) + pad * 2
+            return needed_w <= max_box_w
+
+        font = self._fit_font(font_path, start_size, 24, fits)
+        pad = int(font.size * 0.6)
+        col_h = max(40, max_box_h - pad * 2)
+        ch_w, _ch_h, n_cols = self._vertical_metrics(text, font, col_h)
+        box_w = min(n_cols * (ch_w + 10) + pad * 2, max_box_w)
+        box_h = min(col_h + pad * 2, max_box_h)
+        bx, by = self._place_overlay_box(box, box_w, box_h, position)
 
         # 竖排绘制文字（古籍风格：从上往下，从右往左）
         text_x = bx + box_w - pad
@@ -316,16 +404,16 @@ class ComicLayoutEngine:
 
         if style == "supernatural":
             draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_white, width=2)
-            self.draw_vertical_text(draw, text_x, text_y, text, self.font_bubble, fill=self.c_white, outline=self.c_black, width=3, max_h=max_h)
+            self.draw_vertical_text(draw, text_x, text_y, text, font, fill=self.c_white, outline=self.c_black, width=3, max_h=max_h)
         elif style == "sfx":
             draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_black, width=3)
-            self.draw_vertical_text(draw, text_x, text_y, text, self.font_sfx, fill=self.c_black, outline=self.c_white, width=4, max_h=max_h)
+            self.draw_vertical_text(draw, text_x, text_y, text, font, fill=self.c_black, outline=self.c_white, width=4, max_h=max_h)
         elif style == "title":
             draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_black, width=3)
-            self.draw_vertical_text(draw, text_x, text_y, text, self.font_title, fill=self.c_black, outline=self.c_white, width=4, max_h=max_h)
+            self.draw_vertical_text(draw, text_x, text_y, text, font, fill=self.c_black, outline=self.c_white, width=4, max_h=max_h)
         else:
             draw.rounded_rectangle((bx, by, bx + box_w, by + box_h), radius=12, fill=None, outline=self.c_black, width=3)
-            self.draw_vertical_text(draw, text_x, text_y, text, self.font_bubble, fill=self.c_black, outline=self.c_white, width=3, max_h=max_h)
+            self.draw_vertical_text(draw, text_x, text_y, text, font, fill=self.c_black, outline=self.c_white, width=3, max_h=max_h)
 
     def draw_narration(self, page, draw, box, text):
         x1, y1, x2, y2 = box
@@ -479,10 +567,16 @@ class ComicLayoutEngine:
                 for cfg in cfgs:
                     if len(cfg) == 3:
                         style, text, pos = cfg
+                        # 尊重 BUBBLE_CONFIG 位置：
+                        # - bottom → 横排旁白条
+                        # - title/sfx 的 center → 居中横排大字
+                        # - 其余 center 短文本 → 居中竖排窄框；长文本自动转 bottom(避免压脸)
                         if pos == "bottom":
                             self.draw_narration(page, draw, box, text)
+                        elif pos == "center" and style not in ("title", "sfx") and len(str(text)) >= 10:
+                            self.draw_narration(page, draw, box, text)
                         else:
-                            self.draw_bubble(draw, box, style, text)
+                            self.draw_bubble(draw, box, style, text, pos)
                     else:
                         style, text = cfg
                         self.draw_bubble(draw, box, style, text)

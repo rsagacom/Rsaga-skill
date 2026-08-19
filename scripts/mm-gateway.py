@@ -9,26 +9,22 @@ SCRIPT_DIR = Path(__file__).parent
 
 # ─── 加载 keys ──────────────────────────────────────────────
 def load_key(filename, env_var, prefix=""):
-    """从文件 fallback 加载 key"""
-    key = os.environ.get(env_var, "")
-    if key:
-        return key
-    f = SCRIPT_DIR / filename
-    if f.exists():
-        with open(f) as fh:
-            m = re.search(r'API_KEY:-\{?([A-Za-z0-9-]{40,80})\}?', fh.read())
-            if m:
-                key = m.group(1).strip('{}')
-    return key
+    """只从受控环境读取 key；保留旧参数以兼容调用方，不再扫描脚本文件。"""
+    return os.environ.get(env_var, "")
+
+# 图片生成: OpenAI 兼容接口
+IMAGE_API_KEY = os.environ.get("IMAGE_API_KEY", "")
+IMAGE_API_URL = os.environ.get("IMAGE_API_URL", "").rstrip("/")
 
 STEP_KEY = load_key("step-image-gen.sh", "STEP_API_KEY")
 KIMI_KEY = load_key("kimi-vision.sh", "KIMI_API_KEY")
 
-if not STEP_KEY:
-    print("FATAL: 未找到 STEP_API_KEY", file=sys.stderr)
+# 图片生成改用 OpenAI 兼容接口，不再依赖 STEP_KEY
+if not IMAGE_API_KEY or not IMAGE_API_URL:
+    print("FATAL: 请通过 IMAGE_API_KEY 和 IMAGE_API_URL 环境变量配置图片 provider", file=sys.stderr)
     sys.exit(1)
 
-print(f"🔑 STEP_KEY: {len(STEP_KEY)} chars, KIMI_KEY: {'✓' if KIMI_KEY else '✗'}")
+print(f"🔑 IMAGE_API: {IMAGE_API_URL}, KIMI_KEY: {'✓' if KIMI_KEY else '✗'}")
 
 # ─── API 调用封装 ──────────────────────────────────────────
 def step_vision(img_path, prompt, max_tokens=400):
@@ -80,7 +76,7 @@ def kimi_vision(img_path, prompt, max_tokens=2000):
     return {'content': r['choices'][0]['message']['content'], 'usage': r.get('usage', {})}
 
 def step_generate(prompt, size="1024x1024", style=None, seed=None, cfg_scale=1.0, steps=8):
-    """Step 文生图"""
+    """文生图 (通过 OpenAI 兼容接口)"""
     # 注入风格前缀
     style_prefixes = {
         "ui-wireframe": "UI wireframe sketch, black and white, clean lines, placeholder text, simple geometric shapes, no color, minimal detail, professional UX layout.",
@@ -111,9 +107,9 @@ def step_generate(prompt, size="1024x1024", style=None, seed=None, cfg_scale=1.0
         payload['seed'] = int(seed)
 
     req = urllib.request.Request(
-        'https://api.stepfun.com/v1/images/generations',
+        f"{IMAGE_API_URL}/v1/images/generations",
         data=json.dumps(payload).encode(),
-        headers={'Authorization': f'Bearer {STEP_KEY}', 'Content-Type': 'application/json'}
+        headers={'Authorization': f'Bearer {IMAGE_API_KEY}', 'Content-Type': 'application/json'}
     )
     with urllib.request.urlopen(req, timeout=180) as resp:
         r = json.loads(resp.read())
@@ -129,7 +125,7 @@ def step_generate(prompt, size="1024x1024", style=None, seed=None, cfg_scale=1.0
     return {'images': len(images), 'size': size}
 
 def step_edit(img_path, prompt, cfg_scale=1.0, steps=8, seed=None):
-    """Step 图像编辑"""
+    """图像编辑 (通过 OpenAI 兼容接口)"""
     img_path = os.path.expanduser(img_path)
     ext = img_path.rsplit('.', 1)[-1].lower() if '.' in img_path else 'png'
     mime_map = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'webp': 'image/webp'}
@@ -163,10 +159,10 @@ def step_edit(img_path, prompt, cfg_scale=1.0, steps=8, seed=None):
     body += f'--{boundary}--\r\n'.encode()
 
     req = urllib.request.Request(
-        'https://api.stepfun.com/v1/images/edits',
+        f"{IMAGE_API_URL}/v1/images/edits",
         data=body,
         headers={
-            'Authorization': f'Bearer {STEP_KEY}',
+            'Authorization': f'Bearer {IMAGE_API_KEY}',
             'Content-Type': f'multipart/form-data; boundary={boundary}',
         },
     )
@@ -202,7 +198,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
         if self.path == '/health':
             self._send_json(200, {
                 'status': 'ok',
-                'step_key': bool(STEP_KEY),
+                'image_api': IMAGE_API_URL,
                 'kimi_key': bool(KIMI_KEY),
             })
         else:
@@ -274,9 +270,9 @@ class GatewayHandler(BaseHTTPRequestHandler):
                 'steps': steps,
             }
             req = urllib.request.Request(
-                'https://api.stepfun.com/v1/images/generations',
+                f"{IMAGE_API_URL}/v1/images/generations",
                 data=json.dumps(payload).encode(),
-                headers={'Authorization': f'Bearer {STEP_KEY}', 'Content-Type': 'application/json'}
+                headers={'Authorization': f'Bearer {IMAGE_API_KEY}', 'Content-Type': 'application/json'}
             )
             try:
                 with urllib.request.urlopen(req, timeout=180) as resp:

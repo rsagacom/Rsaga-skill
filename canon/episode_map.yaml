@@ -1,0 +1,90 @@
+# 命运模型 Canon — 章节→剧本→分集→场景→镜头映射
+
+canon_schema_version: 1.0
+project: destiny-model
+status: draft
+
+chapter_index:
+  - chapter_id: CH_001
+    title: 第一章：废弃城市的桥
+    source: "chapter_01.md 占位：正式入库时登记原文哈希"
+    adaptation_version: ADAPT_v1
+    episodes:
+      - episode_id: EP_001
+        title: 桥边来客
+        target_duration_seconds: 15
+        narrative_units:
+          - unit_id: NU_001
+            goal: "祁元思远在废弃城市巡视，桥边远景建立"
+            enter_state: "巡视中，警觉"
+            exit_state: "注意到桥下动静"
+            scenes:
+              - scene_id: SCENE_012
+                name: 废弃石桥区（黄昏）
+                shots:
+                  - SHOT_001_001_001
+                  - SHOT_001_001_002
+          - unit_id: NU_002
+            goal: "黑衣女子现身走入桥下阴影并消失"
+            enter_state: "注意到桥下动静"
+            exit_state: "确认目睹异常"
+            scenes:
+              - scene_id: SCENE_012
+                name: 废弃石桥区（黄昏）
+                shots:
+                  - SHOT_001_002_001
+                  - SHOT_001_002_002
+          - unit_id: NU_003
+            goal: "祁元思远低声说出『刚才那里，明明有人。』"
+            enter_state: "确认目睹异常"
+            exit_state: "低语后进入沉思"
+            scenes:
+              - scene_id: SCENE_012
+                name: 废弃石桥区（黄昏）
+                shots:
+                  - SHOT_001_003_001
+
+episode_map:
+  EP_001:
+    adaptation_revision: ADAPT_v1
+    segments: 4          # Motion Context 4 段接力已验证（15s 精确封装）
+    first_segment_workflow: h3-director-first-segment-av-latent-640x384-8steps
+    context_segment_workflow: h3-motion-context-segment-640x384-8steps
+    audio_plan:
+      dialogue: []
+      sfx: [footsteps, faint_current_resonance, distant_construction]
+      ambient_bed: [low_city_hum]
+      bgm: tension_low
+
+narrative_units:
+  - unit_id: NU_001
+    episode_id: EP_001
+    goal: "祁元思远在废弃城市巡视，桥边远景建立"
+    enter_state: "巡视中，警觉"
+    exit_state: "注意到桥下动静"
+    scenes: [SCENE_012]
+    shots: [SHOT_001_001_001, SHOT_001_001_002]
+  - unit_id: NU_002
+    episode_id: EP_001
+    goal: "黑衣女子现身走入桥下阴影并消失"
+    enter_state: "注意到桥下动静"
+    exit_state: "确认目睹异常"
+    scenes: [SCENE_012]
+    shots: [SHOT_001_002_001]
+  - unit_id: NU_003
+    episode_id: EP_001
+    goal: "祁元思远低声说出『刚才那里，明明有人。』"
+    enter_state: "确认目睹异常"
+    exit_state: "低语后进入沉思"
+    scenes: [SCENE_012]
+    shots: [SHOT_001_003_001]
+
+scenes:
+  - scene_id: SCENE_012
+    episode_id: EP_001
+    location_id: SCENE_012
+    name: 废弃石桥区（黄昏）
+    time_of_day: dusk
+    weather: clear
+    summary: 老旧石桥、桥下阴影入口
+    shots: [SHOT_001_001_001, SHOT_001_001_002, SHOT_001_002_001, SHOT_001_003_001]

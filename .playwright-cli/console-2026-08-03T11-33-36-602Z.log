@@ -1,0 +1,15 @@
+[     770ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[     839ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/auth/me:0
+[     839ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/credits:0
+[     839ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/jobs:0
+[     840ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/credits/transactions:0
+[     840ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/studio-settings:0
+[     842ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/billing/packages:0
+[     843ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8787/api/billing/orders:0
+[   13011ms] ReferenceError: textarea is not defined
+    at eval (eval at predicate (eval at evaluate (:303:30)), <anonymous>:2:43)
+    at predicate (eval at evaluate (:303:30), <anonymous>:7:27)
+    at next (eval at evaluate (:303:30), <anonymous>:29:33)
+    at eval (eval at evaluate (:303:30), <anonymous>:42:13)
+    at UtilityScript.evaluate (<anonymous>:305:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)

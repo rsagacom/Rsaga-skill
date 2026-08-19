@@ -1,0 +1,16 @@
+{
+  "1": {
+    "class_type": "MockImage",
+    "inputs": {
+      "prompt": "{{PROMPT}}",
+      "negative_prompt": "{{NEGATIVE_PROMPT}}",
+      "client_id": "{{CLIENT_ID}}"
+    }
+  },
+  "2": {
+    "class_type": "MockImageOutput",
+    "inputs": {
+      "image": ["1", 0]
+    }
+  }
+}

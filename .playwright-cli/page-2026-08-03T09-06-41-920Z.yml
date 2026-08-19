@@ -1,0 +1,63 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ✦
+        - generic [ref=e6]: 漫剧工作台
+      - generic [ref=e7]: 项目
+      - generic [ref=e8]: 还没有项目
+      - generic [ref=e10]:
+        - generic [ref=e11]: 本地积分
+        - strong [ref=e12]: "0"
+        - generic [ref=e13]: 真实 provider 接入前使用本地预览
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - text: AI MANHUA STUDIO
+        - heading "从小说开始制作一部漫剧" [level=1] [ref=e17]
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: CREATE YOUR STORY
+          - heading "把文字变成可审核的视觉流水线。" [level=2] [ref=e21]
+          - paragraph [ref=e22]: 小说导入、改编追溯、角色母版、分镜、关键帧和成片，都在同一个项目里留下证据。
+        - generic [ref=e23]:
+          - heading "新建项目" [level=3] [ref=e24]
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - text: QUICK START
+              - paragraph [ref=e27]: 选择一个题材模板，仍可在创建前继续修改。
+            - generic [ref=e28]:
+              - button "都市情感 雨夜合约" [ref=e29] [cursor=pointer]:
+                - strong [ref=e30]: 都市情感
+                - generic [ref=e31]: 雨夜合约
+              - button "悬疑惊悚 午夜便利店" [ref=e32] [cursor=pointer]:
+                - strong [ref=e33]: 悬疑惊悚
+                - generic [ref=e34]: 午夜便利店
+              - button "古风权谋 替嫁医妃" [ref=e35] [cursor=pointer]:
+                - strong [ref=e36]: 古风权谋
+                - generic [ref=e37]: 替嫁医妃
+              - button "逆袭爽剧 废柴的回归" [ref=e38] [cursor=pointer]:
+                - strong [ref=e39]: 逆袭爽剧
+                - generic [ref=e40]: 废柴的回归
+          - textbox "项目标题，例如：雨夜合约" [ref=e41]
+          - generic [ref=e42]:
+            - generic [ref=e43]: 视觉风格
+            - combobox "视觉风格" [ref=e44]:
+              - option "国漫写实" [selected]
+              - option "黑白水墨"
+              - option "赛博国风"
+              - option "古典工笔"
+          - textbox "先写一段故事梗概，也可以创建后再导入小说" [ref=e45]
+          - button "创建项目" [ref=e46] [cursor=pointer]
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - text: 导入项目交换包
+              - button "导入项目交换包" [ref=e49]
+            - button "导入 JSON" [disabled] [ref=e50]
+          - generic [ref=e51]: 可选：登录账户后启用项目隔离
+          - generic [ref=e52]:
+            - textbox "邮箱" [ref=e53]
+            - textbox "密码（至少 8 位）" [ref=e54]
+            - generic [ref=e55]:
+              - button "登录" [ref=e56] [cursor=pointer]
+              - button "注册" [ref=e57] [cursor=pointer]
+  - alert [ref=e58]

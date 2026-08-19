@@ -5,7 +5,7 @@ from pathlib import Path
 
 # v7 角色外貌（<200 字符，留空间给场景描述+画风后缀）
 QI = (
-    'Young Chinese man 25yo, thin black-frame glasses, short black hair with bangs, '
+    'Young Chinese man 25yo, thin wire-rim glasses, short black hair with bangs, '
     'beige casual blazer, dark blue V-neck shirt, old black backpack, '
     'tired hollow eyes with dark circles, pale skin'
 )
@@ -131,6 +131,8 @@ def main():
         for name, entries in bubbles.items():
             f.write(f'    "{name}": {entries!r},\n')
         f.write('}\n')
+        f.write('\n# layout_chapter.py reads BUBBLE_CONFIG; keep BUBBLES for compatibility.\n')
+        f.write('BUBBLE_CONFIG = BUBBLES\n')
 
     print(f'{len(panels)} panels → {output_file}')
 

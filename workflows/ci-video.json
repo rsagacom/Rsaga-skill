@@ -1,0 +1,16 @@
+{
+  "1": {
+    "class_type": "MockLoadImage",
+    "inputs": {
+      "image": "{{IMAGE_REF}}"
+    }
+  },
+  "2": {
+    "class_type": "MockVideo",
+    "inputs": {
+      "image": ["1", 0],
+      "asset_id": "{{ASSET_ID}}",
+      "shot_id": "{{SHOT_ID}}"
+    }
+  }
+}

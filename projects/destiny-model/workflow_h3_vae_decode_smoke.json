@@ -1,0 +1,40 @@
+{
+  "1": {
+    "class_type": "EmptyMiniMaxH3LatentAV",
+    "inputs": {
+      "width": 832,
+      "height": 480,
+      "length": 124
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["1", 0],
+      "vae": ["2", 0]
+    }
+  },
+  "4": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["3", 0],
+      "fps": 24.0,
+      "bit_depth": 8
+    }
+  },
+  "5": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["4", 0],
+      "filename_prefix": "h3_vae_decode_smoke",
+      "format": "mp4",
+      "codec": "auto"
+    }
+  }
+}

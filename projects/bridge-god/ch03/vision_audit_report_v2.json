@@ -1,0 +1,378 @@
+[
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P01_三次",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P02_暴君",
+    "type": "scene"
+  },
+  {
+    "panel": "P03_一周三天两天",
+    "type": "scene",
+    "status": "ERROR",
+    "issues": [
+      "The read operation timed out"
+    ],
+    "raw": ""
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P04_餍足的猫",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P05_不再噩梦",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P06_锁定确认丝线",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "未通过。",
+      "1. 多块电脑屏幕显示可辨识的中文网页标题、正文内容及人物缩略图，存在可读文字，未处理为模糊块/图形，违反“图内不得出现可读文字”和“屏幕只呈现模糊块/图形”的要求。"
+    ],
+    "raw": "未通过。\n1. 多块电脑屏幕显示可辨识的中文网页标题、正文内容及人物缩略图，存在可读文字，未处理为模糊块/图形，违反“图内不得出现可读文字”和“屏幕只呈现模糊块/图形”的要求。",
+    "panel": "P07_寻找目标",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "问题：报纸头版及内页出现乱码/伪文字标题与正文，不符合“不得出现可读文字、乱码文字”及报纸仅可呈现模糊块/图形的要求。"
+    ],
+    "raw": "问题：报纸头版及内页出现乱码/伪文字标题与正文，不符合“不得出现可读文字、乱码文字”及报纸仅可呈现模糊块/图形的要求。",
+    "panel": "P08_证据确凿的恶人",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P09_迟来的正义",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "发现以下问题：",
+      "1. 背景海报上出现可读英文标识（如顶部“EVASBOUR'S”类字样）及排版文字块，违反“图内不得出现可读文字、英文标识、标题字样”的全局要求。",
+      "2. 该海报未以模糊块/图形处理，保留了可读文字，违反场景合规第4条“屏幕、报纸、报告、门牌、海报应只呈现模糊块/图形，无可读文字或乱码”。"
+    ],
+    "raw": "发现以下问题：\n\n1. 背景海报上出现可读英文标识（如顶部“EVASBOUR'S”类字样）及排版文字块，违反“图内不得出现可读文字、英文标识、标题字样”的全局要求。\n2. 该海报未以模糊块/图形处理，保留了可读文字，违反场景合规第4条“屏幕、报纸、报告、门牌、海报应只呈现模糊块/图形，无可读文字或乱码”。",
+    "panel": "P10_就是这两个",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P11_锁定他们",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P12_眼光越来越好",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P13_走得慢一点",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P14_寒意离体",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "问题：出现双重人像（画面为两个镜像对称的完全相同人物）。"
+    ],
+    "raw": "问题：出现双重人像（画面为两个镜像对称的完全相同人物）。",
+    "panel": "P15_少管所",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "画面内时钟表盘存在可读文字（罗马数字时标，如 X、XI、XII 等）。"
+    ],
+    "raw": "画面内时钟表盘存在可读文字（罗马数字时标，如 X、XI、XII 等）。",
+    "panel": "P16_三分钟",
+    "type": "scene"
+  },
+  {
+    "panel": "P17_法医报告",
+    "type": "scene",
+    "status": "ERROR",
+    "issues": [
+      "[Errno 2] No such file or directory: 'projects/bridge-god/ch03/panels/P17_法医报告.png'"
+    ],
+    "raw": ""
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "画面背景中的日历包含可读数字（如 1、3、7、9、11、13、14、15、19、25 等日期数字）及顶部可辨识的符号/文字，违反「不得出现可读文字」及「日历类应只呈现模糊块/图形」的要求。"
+    ],
+    "raw": "画面背景中的日历包含可读数字（如 1、3、7、9、11、13、14、15、19、25 等日期数字）及顶部可辨识的符号/文字，违反「不得出现可读文字」及「日历类应只呈现模糊块/图形」的要求。",
+    "panel": "P18_半年两百",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P19_城中村",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "问题：",
+      "1. 电脑屏幕上呈现可读的文字/类论坛正文内容，违反「图内不得出现可读文字、论坛正文」及「屏幕应只呈现模糊块/图形」的规定。",
+      "2. 墙上的纸张/海报上可见成排文字，非模糊块或图形处理。"
+    ],
+    "raw": "问题：\n1. 电脑屏幕上呈现可读的文字/类论坛正文内容，违反「图内不得出现可读文字、论坛正文」及「屏幕应只呈现模糊块/图形」的规定。\n2. 墙上的纸张/海报上可见成排文字，非模糊块或图形处理。",
+    "panel": "P20_暗网幽灵",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "画面内存在可读中文标题与正文（如“最近又死个混离奇死了，你们听说了吗”及下方列表内容），同时出现乱码/类英文标识（如“Fhmeh uie Fon”“Hus cimnge foSi”）和界面图标，违反“图内不得出现可读文字、乱码文字、英文标识、论坛正文、报告正文、标题字样”的规定。"
+    ],
+    "raw": "画面内存在可读中文标题与正文（如“最近又死个混离奇死了，你们听说了吗”及下方列表内容），同时出现乱码/类英文标识（如“Fhmeh uie Fon”“Hus cimnge foSi”）和界面图标，违反“图内不得出现可读文字、乱码文字、英文标识、论坛正文、报告正文、标题字样”的规定。",
+    "panel": "P21_论坛帖子",
+    "type": "scene"
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "存在问题：画面左侧墙上的日历包含可辨识的文字与数字（日期、月份标题等），违反“图内不得出现可读文字”的全局硬性要求。"
+    ],
+    "raw": "存在问题：画面左侧墙上的日历包含可辨识的文字与数字（日期、月份标题等），违反“图内不得出现可读文字”的全局硬性要求。",
+    "panel": "P22_12月上旬",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P23_呼唤房东",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P24_一片死寂",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P25_试着使用能力",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P26_等了一天两天一周",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P27_恐慌变庆幸",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P28_重新投简历",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P29_入职小公司",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P30_挤地铁赔笑脸",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P31_回来了",
+    "type": "scene"
+  },
+  {
+    "panel": "P32_下班路过",
+    "type": "scene",
+    "status": "ERROR",
+    "issues": [
+      "The read operation timed out"
+    ],
+    "raw": ""
+  },
+  {
+    "status": "FAIL",
+    "issues": [
+      "- 玻璃门上的告示/标识区域出现可读英文/字母（如可见的“en”字样），违反「不得出现可读文字、英文标识」的要求。"
+    ],
+    "raw": "- 玻璃门上的告示/标识区域出现可读英文/字母（如可见的“en”字样），违反「不得出现可读文字、英文标识」的要求。",
+    "panel": "P33_推开门",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P34_喂",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P35_少女的声音",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P36_购物篮差点掉",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P37_别找了",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P38_他死了",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P39_回路没拆",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P40_什么意思",
+    "type": "scene"
+  },
+  {
+    "panel": "P41_别再用能力",
+    "type": "scene",
+    "status": "ERROR",
+    "issues": [
+      "The read operation timed out"
+    ],
+    "raw": ""
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P42_夹缝",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P43_寒意升起",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P44_你是谁",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P45_好心的路人",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "1. 全局硬性检查1未通过：画面风格为写实人脸/真人照片质感，未呈现东亚黑白漫画/2D comic 效果。",
+    "panel": "P46_信号切断",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P47_攥着购物篮",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过。",
+    "panel": "P48_一切都变了",
+    "type": "scene"
+  },
+  {
+    "status": "PASS",
+    "issues": [],
+    "raw": "通过",
+    "panel": "P48_扉页",
+    "type": "scene"
+  }
+]

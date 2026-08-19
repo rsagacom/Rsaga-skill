@@ -1,0 +1,2 @@
+# Optional production runtime; keep base requirements installable without a database driver.
+psycopg[binary]>=3.2,<4

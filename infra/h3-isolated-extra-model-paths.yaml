@@ -1,0 +1,14 @@
+# H3 isolated ComfyUI only.  Keep the runtime/user/output tree on the H3
+# package volume while reusing the already downloaded model assets.
+# This file contains no credentials and is safe to copy to cachyos-ai.
+h3_shared:
+  diffusion_models: |
+    /mnt/sd_nvme/MiniMax-H3/quark-package/models/diffusion_models
+    /mnt/gaosu_sata/ComfyUI/models/diffusion_models
+  text_encoders: |
+    /mnt/gaosu_sata/ComfyUI/models/text_encoders
+  vae: |
+    /mnt/gaosu_sata/ComfyUI/models/vae
+  loras: |
+    /mnt/sd_nvme/MiniMax-H3/community-src/drbaph
+    /mnt/gaosu_sata/ComfyUI/models/loras

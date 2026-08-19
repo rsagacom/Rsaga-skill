@@ -1,0 +1,59 @@
+# Prompt Preset Library — 可复用提示词模板
+# 每个 preset 是"模板 + 参数槽位"，不写死某个模型或 workflow；
+# 编译产物进入 prompt 修订（PROMPT_<uuid>）。
+
+library_version: 1.0
+
+common_negatives: &common_negatives
+  - text_subtitles
+  - extra_fingers
+  - logo
+  - modern_car
+  - white_reference_board_leak
+
+style_presets:
+  - id: STYLE_3DCG_STYLIZED
+    style: 风格化写实 3D CG，游戏过场质感
+    notes: 非纯真人实拍，非平面 2D 动漫
+  - id: STYLE_3DCG_PURE
+    style: 3D 国风 CG，材质与服装稳定
+  - id: STYLE_INK_WASH
+    style: 国风水墨线稿，轮廓与符纹清晰
+  - id: STYLE_ANIME_CEL
+    style: 2D 赛璐璐动漫，平涂阴影
+
+shot_presets:
+  - id: PRESET_ESTABLISHING_DUSK
+    purpose: 远景开篇建立，黄昏废弃城市
+    slots:
+      scene: "{{SCENE_DESC}}"
+      character: "{{CHAR_MAIN_DESC}}"
+      action: "{{ACTION}}"
+    template: |
+      {scene} 的远景，暖色傍晚光照，{character} 入画，{action}。
+      石桥拱门、砖石、枯草清晰，远处有施工残迹。
+      低城市嗡鸣与远处施工声。
+    negatives: *common_negatives
+  - id: PRESET_SLOW_PUSH_PORTRAIT
+    purpose: 侧身/近景推进人物
+    template: |
+      {character} 的{camera}镜头，缓慢推进。
+      保持发型、眼镜、服装颜色与款式一致。
+      无明显对白动作，嘴部轻闭。
+    negatives: *common_negatives
+  - id: PRESET_CU_FACE_TALKING
+    purpose: 对白近景（人脸占画面高度约 35%–45%）
+    template: |
+      {character} 面部近景，近似锁机位，轻微呼吸，小幅转头。
+      人脸占画面高度约40%，五官清晰、风格稳定。
+      视觉上无话可读字。
+    negatives: *common_negatives
+
+anomaly_presets:
+  - id: PRESET_VANISH_UNDER_BRIDGE
+    purpose: 人物走入桥下阴影消失的叙事单元
+    template: "{character} 走向桥下阴影，身影逐渐隐入黑暗。"
+
+prompt_compile_contract:
+  revision_id: PROMPT_<uuid>
+  record: [slots_resolved, model, provider, negative_prompt, created_at, canonical_preset_id]

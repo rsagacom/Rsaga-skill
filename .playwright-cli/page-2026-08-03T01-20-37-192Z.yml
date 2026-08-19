@@ -1,0 +1,39 @@
+- generic [active] [ref=f2e1]:
+  - main [ref=f2e2]:
+    - complementary [ref=f2e3]:
+      - generic [ref=f2e4]:
+        - generic [ref=f2e5]: ✦
+        - generic [ref=f2e6]: 漫剧工作台
+      - generic [ref=f2e7]: 项目
+      - generic [ref=f2e8]: 还没有项目
+      - generic [ref=f2e10]:
+        - generic [ref=f2e11]: 本地积分
+        - strong [ref=f2e12]: "0"
+        - generic [ref=f2e13]: 真实 provider 接入前使用本地预览
+    - generic [ref=f2e14]:
+      - generic [ref=f2e16]:
+        - text: AI MANHUA STUDIO
+        - heading "从小说开始制作一部漫剧" [level=1] [ref=f2e17]
+      - generic [ref=f2e18]:
+        - generic [ref=f2e19]:
+          - generic [ref=f2e20]: CREATE YOUR STORY
+          - heading "把文字变成可审核的视觉流水线。" [level=2] [ref=f2e21]
+          - paragraph [ref=f2e22]: 小说导入、改编追溯、角色母版、分镜、关键帧和成片，都在同一个项目里留下证据。
+        - generic [ref=f2e23]:
+          - heading "新建项目" [level=3] [ref=f2e24]
+          - textbox "项目标题，例如：雨夜合约" [ref=f2e25]
+          - textbox "先写一段故事梗概，也可以创建后再导入小说" [ref=f2e26]
+          - button "创建项目" [ref=f2e27] [cursor=pointer]
+          - generic [ref=f2e28]:
+            - generic [ref=f2e29]:
+              - text: 导入项目交换包
+              - button "导入项目交换包" [ref=f2e30]
+            - button "导入 JSON" [disabled] [ref=f2e31]
+          - generic [ref=f2e32]: 可选：登录账户后启用项目隔离
+          - generic [ref=f2e33]:
+            - textbox "邮箱" [ref=f2e34]
+            - textbox "密码（至少 8 位）" [ref=f2e35]
+            - generic [ref=f2e36]:
+              - button "登录" [ref=f2e37] [cursor=pointer]
+              - button "注册" [ref=f2e38] [cursor=pointer]
+  - alert [ref=f2e39]

@@ -17,8 +17,9 @@ from comic_engine.generator import generate_panel
 def main():
     parser = argparse.ArgumentParser(description="修复单张画格")
     parser.add_argument("panel_path", help="画格文件路径")
-    parser.add_argument("prompt", help="修正后的英文 prompt")
+    parser.add_argument("prompt", help="修正后的 prompt")
     parser.add_argument("--config", "-c", default=None, help="配置文件路径")
+    parser.add_argument("--api-key", default=None, help="覆盖生图 API key（避免读 config 失效 key）")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -27,7 +28,9 @@ def main():
     provider_name = image_cfg.get("default", "step")
     provider = image_cfg.get(provider_name, {})
 
-    api_key = provider.get("api_key", "")
+    # key 优先级：--api-key > 环境变量 STEP_API_KEY > config
+    import os
+    api_key = args.api_key or os.environ.get("STEP_API_KEY") or provider.get("api_key", "")
     api_url = provider.get("api_url", "https://api.stepfun.com/v1")
     model = provider.get("model", "step-image-edit-2")
     size = provider.get("size", "1024x1024")

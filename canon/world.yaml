@@ -1,0 +1,48 @@
+# 命运模型 Canon — 世界观
+
+canon_schema_version: 1.0
+project: destiny-model
+status: draft   # draft | approved | locked
+source: "《命运模型》第一章开篇章节"
+
+world:
+  timeline:
+    era: 近未来废土
+    season: 不明
+    notable_events:
+      - id: WORLD_EVENT_001
+        description: 城市废弃，人口稀少
+        status: draft
+  locations:
+    - id: SCENE_012
+      name: 废弃城市石桥区
+      kind: open_exterior
+      anchors:
+        - id: SCENE_012_ANCHOR_01
+          description: 石桥拱门（可作背景锚点）
+        - id: SCENE_012_ANCHOR_02
+          description: 桥下阴影入口（黑衣女子消失处）
+      time_of_day_variants: ["dusk"]
+      weather_variants: ["clear", "overcast"]
+      lighting: 暖色傍晚光向（夕照）
+      props:
+        - id: PROP_012_001
+          name: 枯草
+          kind: environment
+        - id: PROP_012_002
+          name: 低坡/施工残迹
+          kind: environment
+      source_segments: []
+      status: draft
+  factions: []
+  rules:
+    - id: WORLD_RULE_001
+      statement: 世界处于废弃化进程中，城市空荡、设施停摆
+      status: draft
+  soundscape:
+    ambient_bed:
+      - low_city_hum   # 低城市嗡鸣
+      - footsteps      # 脚步
+      - faint_current_resonance  # 微弱电流共鸣
+      - distant_construction  # 远处施工
+    weather_fx: [wind_over_bridge]

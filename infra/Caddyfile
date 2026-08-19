@@ -1,0 +1,38 @@
+{
+	admin off
+	email {$ACME_EMAIL}
+}
+
+# The public browser uses same-origin /api and /assets URLs. Preserve those
+# paths when proxying to FastAPI; only the Web app receives the fallback route.
+{$STUDIO_PUBLIC_HOST} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	@api path /api /api/* /assets /assets/* /docs /docs/* /openapi.json
+	handle @api {
+		reverse_proxy api:8787
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+# Container-local health endpoint; it is not published to the host.
+:8080 {
+	@api_health path /_edge_api_health
+	handle @api_health {
+		rewrite * /api/health
+		reverse_proxy api:8787
+	}
+
+	@web_health path /_edge_web_health
+	handle @web_health {
+		reverse_proxy web:3000
+	}
+
+	respond /_edge_health 200
+}

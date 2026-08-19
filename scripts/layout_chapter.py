@@ -15,6 +15,24 @@ from comic_engine.layout import ComicLayoutEngine
 from comic_engine.utils import load_storyboard
 
 
+def load_python_module(path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def get_bubble_config(mod):
+    """Layout uses BUBBLE_CONFIG; accept legacy BUBBLES as a fallback."""
+    if hasattr(mod, "BUBBLE_CONFIG"):
+        return getattr(mod, "BUBBLE_CONFIG")
+    if hasattr(mod, "BUBBLES"):
+        print("提示: 未找到 BUBBLE_CONFIG，使用旧变量 BUBBLES 作为配文配置")
+        return getattr(mod, "BUBBLES")
+    return {}
+
+
 def main():
     parser = argparse.ArgumentParser(description="漫画排版输出 PDF")
     parser.add_argument("layout_config", help="排版配置或分镜脚本路径")
@@ -38,6 +56,10 @@ def main():
 
         engine = ComicLayoutEngine(config)
         pages_config = engine.suggest_auto_layout(panels_list=panels)
+        storyboard_mod = load_python_module(layout_cfg_path)
+        authored_bubbles = get_bubble_config(storyboard_mod)
+        if authored_bubbles:
+            bubble_config = authored_bubbles
 
         panels_dir = Path(args.panels) if args.panels else layout_cfg_path.parent / "panels"
         output_dir = Path(args.output) if args.output else layout_cfg_path.parent / "pages"
@@ -58,13 +80,10 @@ def main():
     # 动态加载排版配置
     sys.path.insert(0, str(layout_cfg_path.parent))
     mod_name = layout_cfg_path.stem
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(mod_name, layout_cfg_path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = load_python_module(layout_cfg_path)
 
     pages_config = getattr(mod, "PAGES", [])
-    bubble_config = getattr(mod, "BUBBLE_CONFIG", {})
+    bubble_config = get_bubble_config(mod)
 
     panels_dir = Path(args.panels) if args.panels else layout_cfg_path.parent / "panels"
     output_dir = Path(args.output) if args.output else layout_cfg_path.parent / "pages"

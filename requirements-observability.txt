@@ -1,0 +1,5 @@
+# Optional production tracing; enabled only with STUDIO_OTEL_ENABLED=true.
+opentelemetry-api>=1.28,<2
+opentelemetry-sdk>=1.28,<2
+opentelemetry-instrumentation-fastapi>=0.49b0,<1
+opentelemetry-exporter-otlp-proto-http>=1.28,<2

@@ -15,6 +15,16 @@ def generate_panel(prompt, api_key, api_url, model, size="1024x1024", timeout=18
         "n": 1,
         "size": size,
     }
+    # 代理支持：urllib 默认不读 HTTPS_PROXY/ALL_PROXY，代理环境下 TLS 会断连
+    import os as _os
+    proxies = {}
+    for k in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
+        if _os.environ.get(k):
+            proxies["https"] = _os.environ[k]
+            break
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler(proxies) if proxies else urllib.request.ProxyHandler({})
+    )
     req = urllib.request.Request(
         f"{api_url}/images/generations",
         data=json.dumps(payload).encode("utf-8"),
@@ -23,10 +33,10 @@ def generate_panel(prompt, api_key, api_url, model, size="1024x1024", timeout=18
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with opener.open(req, timeout=timeout) as resp:
         data = json.loads(resp.read())
     image_url = data["data"][0]["url"]
-    with urllib.request.urlopen(image_url, timeout=120) as r:
+    with opener.open(image_url, timeout=120) as r:
         return r.read()
 
 
@@ -64,11 +74,11 @@ def generate_panels(panels, config, output_dir, sleep_seconds=6, max_retries=3,
     """
     providers = config.get("providers", {})
     image_cfg = providers.get("image", {})
-    provider_name = image_cfg.get("default", "step")
+    provider_name = image_cfg.get("default", "openai")
     provider = image_cfg.get(provider_name, {})
 
     api_key = get_api_key(config, "image", provider_name)
-    api_url = provider.get("api_url", "https://api.stepfun.com/v1")
+    api_url = provider.get("api_url", "http://101.33.32.162:30001")
     model = provider.get("model", "step-image-edit-2")
     size = provider.get("size", "1024x1024")
 

@@ -1,0 +1,16 @@
+# 项目审核规则
+# 覆盖默认规则（character, supernatural, hand, scene, abstract）
+# 添加自定义审核类型
+
+# character:
+#   description: "祁思远外貌一致性"
+#   keywords: ["祁思远", "主角", "青年", "眼镜"]
+#   prompt: |
+#     审核要求：检查图中男子是否符合角色设定。
+#     角色设定：Young Chinese man 25yo, thin wire-rim glasses, short black hair...
+#     请逐一检查：
+#     1. 发型是否为黑色短发带刘海？
+#     2. 是否佩戴细金属框眼镜？
+#     3. 服装是否为米色休闲西装+深蓝色V领衬衫？
+#     4. 画面是否出现重影/叠加/双重人像？
+#     只输出发现的问题，每条一行。如无问题，输出「通过」。

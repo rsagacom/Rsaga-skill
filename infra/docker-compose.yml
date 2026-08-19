@@ -1,0 +1,370 @@
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16.4-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-manhua_studio}
+      POSTGRES_USER: ${POSTGRES_USER:-manhua}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
+    ports:
+      # Production data services are host-local only; public traffic enters
+      # through the optional Caddy edge overlay.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - manhua-postgres:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7.2-alpine}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - manhua-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z}
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio-local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - manhua-minio:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-init:
+    image: ${MINIO_MC_IMAGE:-minio/mc:RELEASE.2025-04-16T18-13-26Z}
+    restart: "no"
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio-local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
+      MINIO_BUCKET: ${MINIO_BUCKET:-manhua-assets}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - >-
+        until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD; do sleep 2; done;
+        mc mb --ignore-existing local/$$MINIO_BUCKET
+
+  config-check:
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: "no"
+    command: ["python", "scripts/production_config_check.py", "--require-production", "--require-workflow-files", "--json"]
+    environment:
+      STUDIO_ENV: production
+      STUDIO_REQUIRE_AUTH: "true"
+      STUDIO_ALLOW_LOCAL_TOP_UP: "false"
+      STUDIO_BILLING_PROVIDER: ${STUDIO_BILLING_PROVIDER:-signed-webhook}
+      STUDIO_BILLING_WEBHOOK_SECRET: ${STUDIO_BILLING_WEBHOOK_SECRET:-}
+      STUDIO_BILLING_CHECKOUT_URL: ${STUDIO_BILLING_CHECKOUT_URL:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_API_BASE_URL: ${STRIPE_API_BASE_URL:-https://api.stripe.com}
+      STUDIO_BILLING_SUCCESS_URL: ${STUDIO_BILLING_SUCCESS_URL:-}
+      STUDIO_BILLING_CANCEL_URL: ${STUDIO_BILLING_CANCEL_URL:-}
+      STUDIO_TEXT_PROVIDER: ${STUDIO_TEXT_PROVIDER:-local}
+      STUDIO_TEXT_BASE_URL: ${STUDIO_TEXT_BASE_URL:-}
+      STUDIO_TEXT_MODEL: ${STUDIO_TEXT_MODEL:-}
+      STUDIO_TEXT_API_KEY_ENV: ${STUDIO_TEXT_API_KEY_ENV:-STUDIO_TEXT_API_KEY}
+      STUDIO_TEXT_API_KEY: ${STUDIO_TEXT_API_KEY:-}
+      STUDIO_IMAGE_PROVIDER: ${STUDIO_IMAGE_PROVIDER:-local}
+      COMFYUI_BASE_URL: ${COMFYUI_BASE_URL:-}
+      COMFYUI_IMAGE_WORKFLOW: ${COMFYUI_IMAGE_WORKFLOW:-}
+      STUDIO_VIDEO_PROVIDER: ${STUDIO_VIDEO_PROVIDER:-local}
+      COMFYUI_VIDEO_WORKFLOW: ${COMFYUI_VIDEO_WORKFLOW:-}
+      STUDIO_VISION_PROVIDER: ${STUDIO_VISION_PROVIDER:-local}
+      STUDIO_VISION_BASE_URL: ${STUDIO_VISION_BASE_URL:-}
+      STUDIO_VISION_MODEL: ${STUDIO_VISION_MODEL:-}
+      STUDIO_VISION_API_KEY_ENV: ${STUDIO_VISION_API_KEY_ENV:-STUDIO_VISION_API_KEY}
+      STUDIO_VISION_API_KEY: ${STUDIO_VISION_API_KEY:-}
+      STUDIO_SPEECH_PROVIDER: ${STUDIO_SPEECH_PROVIDER:-local}
+      STUDIO_SPEECH_BASE_URL: ${STUDIO_SPEECH_BASE_URL:-}
+      STUDIO_SPEECH_MODEL: ${STUDIO_SPEECH_MODEL:-}
+      STUDIO_SPEECH_API_KEY_ENV: ${STUDIO_SPEECH_API_KEY_ENV:-OPENAI_API_KEY}
+      STUDIO_SPEECH_ALLOWED_VOICES: ${STUDIO_SPEECH_ALLOWED_VOICES:-cedar,marin,alloy,ash,ballad,coral,echo,fable,nova,onyx,sage,shimmer,verse}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      STUDIO_AUTH_COOKIE_SECURE: ${STUDIO_AUTH_COOKIE_SECURE:-true}
+      STUDIO_STORE: postgres
+      STUDIO_QUEUE_BACKEND: bullmq
+      STUDIO_STORAGE: minio
+      STUDIO_ALLOWED_HOSTS: ${STUDIO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      STUDIO_CORS_ORIGINS: ${STUDIO_CORS_ORIGINS:-http://localhost:3000}
+      STUDIO_PUBLIC_HOST: ${STUDIO_PUBLIC_HOST:-}
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-}
+      STUDIO_DATABASE_URL: postgresql://${POSTGRES_USER:-manhua}:${POSTGRES_PASSWORD:-change-me-local-only}@postgres:5432/${POSTGRES_DB:-manhua_studio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
+      ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-local-orchestrator-only-change-me}
+      STUDIO_INTERNAL_TOKEN: ${STUDIO_INTERNAL_TOKEN:-local-internal-only-change-me}
+    volumes:
+      - ../workflows:/app/workflows:ro
+
+  api:
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=512m
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      STUDIO_STORE: postgres
+      STUDIO_DATABASE_URL: postgresql://${POSTGRES_USER:-manhua}:${POSTGRES_PASSWORD:-change-me-local-only}@postgres:5432/${POSTGRES_DB:-manhua_studio}
+      STUDIO_RUNTIME_DIR: /app/runtime
+      STUDIO_REQUIRE_AUTH: "true"
+      STUDIO_ENV: production
+      STUDIO_ALLOWED_HOSTS: ${STUDIO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      STUDIO_PUBLIC_HOST: ${STUDIO_PUBLIC_HOST:-}
+      STUDIO_MAX_BODY_BYTES: ${STUDIO_MAX_BODY_BYTES:-16777216}
+      STUDIO_ALLOW_LOCAL_TOP_UP: "false"
+      STUDIO_BILLING_PROVIDER: ${STUDIO_BILLING_PROVIDER:-signed-webhook}
+      STUDIO_BILLING_WEBHOOK_SECRET: ${STUDIO_BILLING_WEBHOOK_SECRET:-}
+      STUDIO_BILLING_CHECKOUT_URL: ${STUDIO_BILLING_CHECKOUT_URL:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_API_BASE_URL: ${STRIPE_API_BASE_URL:-https://api.stripe.com}
+      STUDIO_BILLING_SUCCESS_URL: ${STUDIO_BILLING_SUCCESS_URL:-}
+      STUDIO_BILLING_CANCEL_URL: ${STUDIO_BILLING_CANCEL_URL:-}
+      STUDIO_RATE_LIMIT_PER_MINUTE: ${STUDIO_RATE_LIMIT_PER_MINUTE:-120}
+      STUDIO_RATE_LIMIT_REDIS_URL: ${STUDIO_RATE_LIMIT_REDIS_URL:-redis://redis:6379}
+      STUDIO_RATE_LIMIT_FAIL_CLOSED: ${STUDIO_RATE_LIMIT_FAIL_CLOSED:-false}
+      STUDIO_OTEL_ENABLED: ${STUDIO_OTEL_ENABLED:-false}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-ai-manhua-studio-api}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      STUDIO_QUEUE_BACKEND: bullmq
+      STUDIO_JOB_STALE_SECONDS: ${STUDIO_JOB_STALE_SECONDS:-1800}
+      STUDIO_COMPOSE_ENGINE: ${STUDIO_COMPOSE_ENGINE:-ffmpeg}
+      STUDIO_REMOTION_ROOT: /app/rendering
+      STUDIO_REMOTION_BROWSER_EXECUTABLE: ${STUDIO_REMOTION_BROWSER_EXECUTABLE:-}
+      STUDIO_TEXT_PROVIDER: ${STUDIO_TEXT_PROVIDER:-local}
+      STUDIO_TEXT_BASE_URL: ${STUDIO_TEXT_BASE_URL:-http://127.0.0.1:8000/v1}
+      STUDIO_TEXT_MODEL: ${STUDIO_TEXT_MODEL:-local-model}
+      STUDIO_TEXT_API_KEY_ENV: ${STUDIO_TEXT_API_KEY_ENV:-STUDIO_TEXT_API_KEY}
+      STUDIO_TEXT_API_KEY: ${STUDIO_TEXT_API_KEY:-}
+      STUDIO_IMAGE_PROVIDER: ${STUDIO_IMAGE_PROVIDER:-local}
+      STUDIO_VIDEO_PROVIDER: ${STUDIO_VIDEO_PROVIDER:-local}
+      STUDIO_VISION_PROVIDER: ${STUDIO_VISION_PROVIDER:-local}
+      STUDIO_VISION_BASE_URL: ${STUDIO_VISION_BASE_URL:-http://127.0.0.1:8000/v1}
+      STUDIO_VISION_MODEL: ${STUDIO_VISION_MODEL:-local-vision-model}
+      STUDIO_VISION_API_KEY_ENV: ${STUDIO_VISION_API_KEY_ENV:-STUDIO_VISION_API_KEY}
+      STUDIO_VISION_API_KEY: ${STUDIO_VISION_API_KEY:-}
+      STUDIO_SPEECH_PROVIDER: ${STUDIO_SPEECH_PROVIDER:-local}
+      STUDIO_SPEECH_BASE_URL: ${STUDIO_SPEECH_BASE_URL:-https://api.openai.com/v1}
+      STUDIO_SPEECH_MODEL: ${STUDIO_SPEECH_MODEL:-gpt-4o-mini-tts-2025-12-15}
+      STUDIO_SPEECH_API_KEY_ENV: ${STUDIO_SPEECH_API_KEY_ENV:-OPENAI_API_KEY}
+      STUDIO_SPEECH_ALLOWED_VOICES: ${STUDIO_SPEECH_ALLOWED_VOICES:-cedar,marin,alloy,ash,ballad,coral,echo,fable,nova,onyx,sage,shimmer,verse}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      STUDIO_ALLOWED_PROVIDER_BASE_URLS: ${STUDIO_ALLOWED_PROVIDER_BASE_URLS:-}
+      COMFYUI_BASE_URL: ${COMFYUI_BASE_URL:-http://127.0.0.1:8188}
+      COMFYUI_IMAGE_WORKFLOW: ${COMFYUI_IMAGE_WORKFLOW:-}
+      COMFYUI_VIDEO_WORKFLOW: ${COMFYUI_VIDEO_WORKFLOW:-}
+      STUDIO_ORCHESTRATOR_URL: http://orchestrator:8790
+      STUDIO_ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-local-orchestrator-only-change-me}
+      STUDIO_INTERNAL_TOKEN: ${STUDIO_INTERNAL_TOKEN:-local-internal-only-change-me}
+      STUDIO_STORAGE: minio
+      STUDIO_S3_BUCKET: ${MINIO_BUCKET:-manhua-assets}
+      STUDIO_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio-local}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
+      AWS_DEFAULT_REGION: us-east-1
+      STUDIO_CORS_ORIGINS: ${STUDIO_CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - manhua-runtime:/app/runtime
+      - ../workflows:/app/workflows:ro
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      schema-check:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+      orchestrator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/api/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+
+  migrate:
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: "no"
+    command: ["python", "-m", "studio_api.migrate"]
+    environment:
+      STUDIO_DATABASE_URL: postgresql://${POSTGRES_USER:-manhua}:${POSTGRES_PASSWORD:-change-me-local-only}@postgres:5432/${POSTGRES_DB:-manhua_studio}
+      STUDIO_RUNTIME_DIR: /app/runtime
+    volumes:
+      - manhua-runtime:/app/runtime
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  schema-check:
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: "no"
+    command: ["python", "scripts/postgres_schema_check.py", "--check-only", "--data-smoke", "--json"]
+    environment:
+      STUDIO_DATABASE_URL: postgresql://${POSTGRES_USER:-manhua}:${POSTGRES_PASSWORD:-change-me-local-only}@postgres:5432/${POSTGRES_DB:-manhua_studio}
+      STUDIO_RUNTIME_DIR: /app/runtime
+    volumes:
+      - manhua-runtime:/app/runtime
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+
+  orchestrator:
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ../orchestrator
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      STUDIO_ENV: production
+      REDIS_URL: redis://redis:6379
+      ORCHESTRATOR_PORT: 8790
+      ORCHESTRATOR_HOST: 0.0.0.0
+      ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-local-orchestrator-only-change-me}
+      ORCHESTRATOR_REQUIRE_AUTH: "true"
+      ORCHESTRATOR_MAX_BODY_BYTES: ${ORCHESTRATOR_MAX_BODY_BYTES:-65536}
+    ports:
+      - "127.0.0.1:8790:8790"
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8790/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 6
+
+  orchestrator-worker:
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ../orchestrator
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      STUDIO_API_URL: http://api:8787
+      STUDIO_INTERNAL_TOKEN: ${STUDIO_INTERNAL_TOKEN:-local-internal-only-change-me}
+      STUDIO_WORKER_CONCURRENCY: ${STUDIO_WORKER_CONCURRENCY:-2}
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        # Empty means same-origin behind the production HTTPS ingress. Set an
+        # explicit HTTPS API origin only when API and Web use separate domains.
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+
+volumes:
+  manhua-postgres:
+  manhua-redis:
+  manhua-minio:
+  manhua-runtime:

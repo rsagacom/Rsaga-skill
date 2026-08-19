@@ -1,0 +1,411 @@
+name: AI Manhua Studio CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-postgres.txt
+            requirements-storage.txt
+            requirements-observability.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-postgres.txt -r requirements-storage.txt -r requirements-observability.txt
+
+      - name: Python tests
+        run: python -m unittest discover -s tests -q
+
+      - name: Python compile check
+        run: python -m compileall -q studio_api studio_core scripts tests
+
+      - name: Compose syntax and deployment contract check
+        run: make compose-check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            rendering/package-lock.json
+            orchestrator/package-lock.json
+
+      - name: Web build
+        working-directory: web
+        run: npm ci && npm run build
+
+      - name: Rendering checks
+        working-directory: rendering
+        run: npm ci && npm run typecheck && npm test
+
+      - name: Orchestrator checks
+        working-directory: orchestrator
+        run: npm ci && npm run typecheck && npm test
+
+      - name: Diff and secret-shape checks
+        run: |
+          git diff --check
+          python scripts/production_config_check.py --require-production --json > /tmp/production-config-report.json || test $? -eq 1
+          ! grep -E '([A-Za-z0-9_]{32,}|Bearer[[:space:]]+|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' /tmp/production-config-report.json
+
+  container-smoke:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      STUDIO_INTERNAL_TOKEN: ci-local-dev-token
+      STUDIO_SMOKE_INTERNAL_TOKEN: ci-local-dev-token
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and start local preview containers
+        run: |
+          docker compose -f infra/docker-compose.dev.yml up -d --build
+          for attempt in $(seq 1 60); do
+            api_status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/health || true)
+            web_status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)
+            if [ "$api_status" = 200 ] && [ "$web_status" = 200 ]; then
+              break
+            fi
+            if [ "$attempt" = 60 ]; then
+              docker compose -f infra/docker-compose.dev.yml ps
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run API and Web stack smoke
+        run: |
+          python scripts/stack_smoke.py \
+            --api-url http://127.0.0.1:8787 \
+            --web-url http://127.0.0.1:3000 \
+            --skip-generation \
+            --generation-timeout 180
+
+      - name: Collect container diagnostics
+        if: always()
+        run: |
+          docker compose -f infra/docker-compose.dev.yml ps
+          docker compose -f infra/docker-compose.dev.yml logs --no-color --tail=200
+
+      - name: Stop local preview containers
+        if: always()
+        run: docker compose -f infra/docker-compose.dev.yml down -v --remove-orphans
+
+  browser-smoke:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      STUDIO_INTERNAL_TOKEN: ci-local-dev-token
+      STUDIO_SMOKE_INTERNAL_TOKEN: ci-local-dev-token
+      STUDIO_BROWSER_SESSION: ai-manhua-browser-smoke-ci
+      STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-adaptation-smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Chromium for Playwright CLI
+        run: npx --yes --package=playwright -- playwright install --with-deps chromium
+
+      - name: Build and start local preview containers
+        run: |
+          docker compose -f infra/docker-compose.dev.yml up -d --build
+          for attempt in $(seq 1 60); do
+            api_status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/health || true)
+            web_status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)
+            if [ "$api_status" = 200 ] && [ "$web_status" = 200 ]; then
+              break
+            fi
+            if [ "$attempt" = 60 ]; then
+              docker compose -f infra/docker-compose.dev.yml ps
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run real browser adaptation smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+        run: bash scripts/browser_adaptation_smoke.sh
+
+      - name: Run real browser TXT source-file smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_PYTHON_BIN: python3
+          STUDIO_BROWSER_SESSION: ai-manhua-source-file-txt-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-source-file-import-smoke
+        run: bash scripts/browser_source_file_import_smoke.sh
+
+      - name: Run real browser DOCX source-file smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_PYTHON_BIN: python3
+          STUDIO_BROWSER_SESSION: ai-manhua-source-file-docx-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-docx-source-file-smoke
+        run: bash scripts/browser_docx_source_file_smoke.sh
+
+      - name: Run real browser EPUB source-file smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_PYTHON_BIN: python3
+          STUDIO_BROWSER_SESSION: ai-manhua-source-file-epub-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-epub-source-file-smoke
+        run: bash scripts/browser_epub_source_file_smoke.sh
+
+      - name: Run real browser PDF source-file smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_PYTHON_BIN: python3
+          STUDIO_BROWSER_SESSION: ai-manhua-source-file-pdf-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-pdf-source-file-smoke
+        run: bash scripts/browser_pdf_source_file_smoke.sh
+
+      - name: Run real browser Job progress smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_BROWSER_SESSION: ai-manhua-job-progress-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-job-progress-smoke
+        run: bash scripts/browser_job_progress_smoke.sh
+
+      - name: Run real browser full production-flow smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_BROWSER_SESSION: ai-manhua-browser-full-pipeline-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-full-pipeline-smoke
+        run: bash scripts/browser_full_pipeline_smoke.sh
+
+      - name: Run real browser character reference upload smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_BROWSER_SESSION: ai-manhua-character-reference-upload-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-character-reference-upload-smoke
+        run: bash scripts/browser_character_reference_upload_smoke.sh
+
+      - name: Run real browser narration smoke
+        env:
+          PLAYWRIGHT_CLI: npx --yes --package=@playwright/cli -- playwright-cli
+          STUDIO_BROWSER_SESSION: ai-manhua-narration-smoke-ci
+          STUDIO_BROWSER_EVIDENCE_DIR: output/playwright/browser-narration-smoke
+        run: bash scripts/browser_narration_smoke.sh
+
+      - name: Collect browser and container diagnostics
+        if: always()
+        run: |
+          docker compose -f infra/docker-compose.dev.yml ps
+          docker compose -f infra/docker-compose.dev.yml logs --no-color --tail=200
+
+      - name: Upload browser smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-adaptation-smoke
+          path: output/playwright/browser-adaptation-smoke
+          if-no-files-found: warn
+
+      - name: Upload Job progress browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-job-progress-smoke
+          path: output/playwright/browser-job-progress-smoke
+          if-no-files-found: warn
+
+      - name: Upload full pipeline browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-full-pipeline-smoke
+          path: output/playwright/browser-full-pipeline-smoke
+          if-no-files-found: warn
+
+      - name: Upload character reference upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-character-reference-upload-smoke
+          path: output/playwright/browser-character-reference-upload-smoke
+          if-no-files-found: warn
+
+      - name: Upload narration browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-narration-smoke
+          path: output/playwright/browser-narration-smoke
+          if-no-files-found: warn
+
+      - name: Upload source-file browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-source-file-smokes
+          path: |
+            output/playwright/browser-source-file-import-smoke
+            output/playwright/browser-docx-source-file-smoke
+            output/playwright/browser-epub-source-file-smoke
+            output/playwright/browser-pdf-source-file-smoke
+          if-no-files-found: warn
+
+      - name: Stop local preview containers
+        if: always()
+        run: docker compose -f infra/docker-compose.dev.yml down -v --remove-orphans
+
+  postgres-schema-smoke:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_DB: manhua_studio
+          POSTGRES_USER: manhua
+          POSTGRES_PASSWORD: ci-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U manhua -d manhua_studio"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PostgreSQL client dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-postgres.txt
+
+      - name: Apply migrations and run schema/data smoke
+        env:
+          STUDIO_DATABASE_URL: postgresql://manhua:ci-postgres@127.0.0.1:5432/manhua_studio
+          STUDIO_RUNTIME_DIR: /tmp/ai-manhua-schema-runtime
+        run: |
+          mkdir -p "$STUDIO_RUNTIME_DIR"
+          python -m studio_api.migrate
+          python scripts/postgres_schema_check.py --check-only --data-smoke --json
+
+  production-compose-smoke:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # CI-only values.  The production Compose config-check still runs with
+      # STUDIO_ENV=production; no real provider credential is used here.
+      POSTGRES_PASSWORD: ci-postgres-password-for-compose-20260804
+      MINIO_ROOT_PASSWORD: ci-minio-password-for-compose-20260804
+      ORCHESTRATOR_TOKEN: ci-orchestrator-token-for-compose-20260804
+      STUDIO_INTERNAL_TOKEN: ci-internal-token-for-compose-20260804
+      STRIPE_SECRET_KEY: ci-stripe-secret-key-for-compose-20260804
+      STRIPE_WEBHOOK_SECRET: ci-stripe-webhook-secret-for-compose-20260804
+      STUDIO_SMOKE_STRIPE_WEBHOOK_SECRET: ci-stripe-webhook-secret-for-compose-20260804
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate production Caddy edge config
+        run: |
+          docker run --rm \
+            -e STUDIO_PUBLIC_HOST=studio.example.com \
+            -e ACME_EMAIL=ops@example.com \
+            -v "$PWD/infra/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.11.4-alpine \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+      - name: Start production-configured Compose topology
+        run: |
+          docker compose \
+            -f infra/docker-compose.yml \
+            -f infra/docker-compose.ci.yml \
+            up -d --build
+          for attempt in $(seq 1 90); do
+            api_status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/health || true)
+            web_status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)
+            if [ "$api_status" = 200 ] && [ "$web_status" = 200 ]; then
+              break
+            fi
+            if [ "$attempt" = 90 ]; then
+              docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml ps
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run production topology API/BullMQ/MinIO/provider smoke
+        run: |
+          mkdir -p output
+          python scripts/stack_smoke.py \
+            --api-url http://127.0.0.1:8787 \
+            --web-url http://127.0.0.1:3000 \
+            --orchestrator-url http://127.0.0.1:8790 \
+            --require-orchestrator \
+            --expect-store postgres \
+            --expect-queue-backend bullmq \
+            --expect-storage s3 \
+            --include-source-files \
+            --include-av \
+            --include-billing \
+            --generation-timeout 240 \
+            | tee output/production-compose-smoke.json
+
+      - name: Collect production topology diagnostics
+        if: always()
+        run: |
+          docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml ps
+          docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml logs --no-color --tail=300
+
+      - name: Upload production topology smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-compose-smoke
+          path: output/production-compose-smoke.json
+          if-no-files-found: warn
+
+      - name: Stop production topology
+        if: always()
+        run: docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml down -v --remove-orphans

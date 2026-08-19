@@ -1,0 +1,61 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]
+  - alert [ref=e48]
+  - main [ref=e222]:
+    - generic [ref=e223]:
+      - generic [ref=e224]:
+        - text: OPEN SOURCE GRAPH CANVAS · REACT FLOW
+        - heading "制作关系画布" [level=1] [ref=e225]
+        - paragraph [ref=e226]: 项目 → 分集 → 镜头 → 素材。筛选缺失/待处理节点，优先修复阻塞链路。
+      - link "返回工作台" [ref=e227] [cursor=pointer]:
+        - /url: /
+    - generic "关系图筛选" [ref=e228]:
+      - generic [ref=e229]:
+        - text: 状态
+        - combobox "状态" [ref=e230]:
+          - option "全部节点" [selected]
+          - option "缺失 / 待处理"
+          - option "已就绪"
+      - generic [ref=e231]:
+        - text: 类型
+        - combobox "类型" [ref=e232]:
+          - option "全部类型" [selected]
+          - option "故事资产"
+          - option "制作链路"
+          - option "媒体资产"
+      - generic [ref=e233]: 显示 6 / 6 个节点 · 5 条关系
+    - application [ref=e235]:
+      - generic [ref=e237]:
+        - generic:
+          - generic:
+            - img:
+              - group "Edge from project:project_620794b07b7e4d86 to character:character_10080ee105e64a47" [ref=e238] [cursor=pointer]:
+                - generic [ref=e241]: contains
+            - img:
+              - group "Edge from project:project_620794b07b7e4d86 to character:character_370ebf7791bf42d4" [ref=e243] [cursor=pointer]:
+                - generic [ref=e246]: contains
+            - img:
+              - group "Edge from project:project_620794b07b7e4d86 to character:character_77f1db89098746e1" [ref=e248] [cursor=pointer]:
+                - generic [ref=e251]: contains
+            - img:
+              - group "Edge from project:project_620794b07b7e4d86 to episode:episode_b05cc37b89c54cd5" [ref=e253] [cursor=pointer]:
+                - generic [ref=e254]: contains
+            - img:
+              - group "Edge from episode:episode_b05cc37b89c54cd5 to shot:shot_f03809b277544d9e" [ref=e256] [cursor=pointer]:
+                - generic [ref=e259]: contains
+          - generic:
+            - group [ref=e261]: 画布筛选验收 normal
+            - group [ref=e264]: 女主角 draft
+            - group [ref=e267]: 重要关系人 draft
+            - group [ref=e270]: 主要对手 draft
+            - group [ref=e273]: 第1章 draft
+            - group [ref=e276]: 镜头 1 normal
+      - img "Mini Map" [ref=e280]
+      - generic "Control Panel" [ref=e281]:
+        - button "Zoom In" [ref=e282] [cursor=pointer]
+        - button "Zoom Out" [ref=e285] [cursor=pointer]
+        - button "Fit View" [ref=e288] [cursor=pointer]
+        - button "Toggle Interactivity" [ref=e291] [cursor=pointer]
+      - link "React Flow attribution" [ref=e295] [cursor=pointer]:
+        - /url: https://reactflow.dev/attribution
+        - text: React Flow

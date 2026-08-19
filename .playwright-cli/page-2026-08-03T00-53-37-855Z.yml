@@ -1,0 +1,209 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ✦
+        - generic [ref=e6]: 漫剧工作台
+      - generic [ref=e7]: 项目
+      - button "画布筛选验收 0 素材" [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 画布筛选验收
+        - generic [ref=e51]: 0 素材
+      - generic [ref=e10]:
+        - generic [ref=e11]: 本地积分
+        - strong [ref=e12]: "100"
+        - generic [ref=e13]: 真实 provider 接入前使用本地预览
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - text: AI MANHUA STUDIO
+          - heading "画布筛选验收" [level=1] [ref=e52]
+        - generic [ref=e53]:
+          - button "导出交换包" [ref=e54] [cursor=pointer]
+          - button "下载项目包" [ref=e55] [cursor=pointer]
+          - link "打开关系画布 ↗" [ref=e56] [cursor=pointer]:
+            - /url: /board/project_620794b07b7e4d86
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: 改编单元
+          - strong [ref=e60]: "0"
+        - generic [ref=e61]:
+          - generic [ref=e62]: 角色
+          - strong [ref=e63]: "3"
+        - generic [ref=e64]:
+          - generic [ref=e65]: 镜头
+          - strong [ref=e66]: "1"
+        - generic [ref=e67]:
+          - generic [ref=e68]: 素材
+          - strong [ref=e69]: "0"
+        - button "一键准备项目结构" [ref=e70] [cursor=pointer]
+        - button "批量合成项目" [ref=e71] [cursor=pointer]
+        - button "批量视觉审核" [disabled] [ref=e72]
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - text: PROJECT SETTINGS
+            - heading "项目设置" [level=2] [ref=e76]
+          - generic [ref=e77]: 保存后影响后续结构生成
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]: 标题
+            - textbox "标题" [ref=e81]: 画布筛选验收
+          - generic [ref=e82]:
+            - generic [ref=e83]: 视觉风格
+            - combobox "视觉风格" [ref=e84]:
+              - option "国漫写实" [selected]
+              - option "黑白水墨"
+              - option "赛博国风"
+              - option "古典工笔"
+          - generic [ref=e85]:
+            - generic [ref=e86]: 目标时长
+            - combobox "目标时长" [ref=e87]:
+              - option "30 秒"
+              - option "1 分钟" [selected]
+              - option "3 分钟"
+              - option "5 分钟"
+          - generic [ref=e88]:
+            - generic [ref=e89]: 故事梗概
+            - textbox "故事梗概" [ref=e90]: 沈岚在旧宅发现银色怀表，雨夜冲突即将开始。
+          - button "保存项目设置" [ref=e91] [cursor=pointer]
+      - generic [ref=e92]:
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - text: JOB CONTROL
+              - heading "任务中心" [level=2] [ref=e96]
+            - generic [ref=e97]: 每 5 秒刷新
+          - generic [ref=e141]:
+            - generic [ref=e142]:
+              - strong [ref=e143]: 项目结构
+              - generic [ref=e144]: completed · 1/3 次 · 0 积分
+            - button "时间线" [ref=e146] [cursor=pointer]
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - text: ACCOUNT & PROVIDERS
+              - heading "积分与 Provider" [level=2] [ref=e102]
+            - strong [ref=e103]: "100"
+          - generic [ref=e104]:
+            - button "本地开发 +20" [ref=e105] [cursor=pointer]
+            - generic [ref=e106]: 本地预览模式；生产充值订单尚未启用
+          - group [ref=e107]:
+            - generic "编辑非敏感 Provider 偏好" [ref=e108] [cursor=pointer]
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - text: SOURCE & ADAPTATION
+            - heading "小说改编入口" [level=2] [ref=e112]
+          - generic [ref=e113]: 可追溯模式 · 0 条
+        - generic [ref=e115]:
+          - textbox "文件名" [ref=e116]: novel.txt
+          - textbox "粘贴 TXT / Markdown 内容；每个句子会保留来源字符区间和行号" [ref=e117]
+          - generic [ref=e118]:
+            - text: 上传文件
+            - button "上传文件" [ref=e119]
+          - generic [ref=e120]:
+            - checkbox "我确认拥有或获授权使用此内容" [ref=e121]
+            - text: 我确认拥有或获授权使用此内容
+          - generic [ref=e122]:
+            - button "导入粘贴内容" [ref=e123] [cursor=pointer]
+            - button "上传并解析文件" [disabled] [ref=e124]
+          - generic [ref=e125]:
+            - combobox [ref=e126]:
+              - option "保真"
+              - option "压缩"
+              - option "原创化表达" [selected]
+            - button "运行改编预览" [disabled] [ref=e127]
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - generic [ref=e130]:
+            - text: STORY BIBLE · TRACEABLE ASSETS
+            - heading "故事资产与关系" [level=2] [ref=e131]
+          - generic [ref=e132]:
+            - generic [ref=e133]: 0 个地点/道具 · 0 条关系
+            - button "重新抽取故事资产" [ref=e134] [cursor=pointer]
+        - paragraph [ref=e135]: 抽取结果默认是草稿，来源段落 ID 会随结果保存；通过审核后才作为稳定设定参与关系画布和后续制作。
+        - generic [ref=e136]: 导入小说后点击“重新抽取故事资产”，生成地点、道具和关系草稿。
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - text: CHARACTER LOCKS
+            - heading "角色母版" [level=2] [ref=e150]
+          - generic [ref=e151]:
+            - generic [ref=e152]: 3 个角色 · 三视图 8 积分/个
+            - button "批量生成三视图" [ref=e153] [cursor=pointer]
+        - generic [ref=e154]:
+          - article [ref=e155]:
+            - generic [ref=e156]: 女
+            - generic [ref=e157]:
+              - strong [ref=e158]: 女主角
+              - generic [ref=e159]: protagonist · draft
+              - paragraph [ref=e160]: 根据故事梗概待补全的主角视觉设定
+              - group [ref=e161]:
+                - generic "编辑角色卡" [ref=e162] [cursor=pointer]
+                - option "主角" [selected]
+                - option "配角"
+                - option "对手"
+              - button "生成三视图" [ref=e163] [cursor=pointer]
+          - article [ref=e164]:
+            - generic [ref=e165]: 重
+            - generic [ref=e166]:
+              - strong [ref=e167]: 重要关系人
+              - generic [ref=e168]: supporting · draft
+              - paragraph [ref=e169]: 推动主角选择和冲突的关键关系人
+              - group [ref=e170]:
+                - generic "编辑角色卡" [ref=e171] [cursor=pointer]
+                - option "主角"
+                - option "配角" [selected]
+                - option "对手"
+              - button "生成三视图" [ref=e172] [cursor=pointer]
+          - article [ref=e173]:
+            - generic [ref=e174]: 主
+            - generic [ref=e175]:
+              - strong [ref=e176]: 主要对手
+              - generic [ref=e177]: antagonist · draft
+              - paragraph [ref=e178]: 制造核心阻力的主要对手
+              - group [ref=e179]:
+                - generic "编辑角色卡" [ref=e180] [cursor=pointer]
+                - option "主角"
+                - option "配角"
+                - option "对手" [selected]
+              - button "生成三视图" [ref=e181] [cursor=pointer]
+      - generic [ref=e182]:
+        - generic [ref=e183]:
+          - generic [ref=e184]:
+            - generic [ref=e185]: EPISODE 01
+            - heading "第1章" [level=2] [ref=e186]
+          - generic [ref=e187]:
+            - button "批量生成关键帧" [ref=e188] [cursor=pointer]
+            - button "批量生成视频" [ref=e189] [cursor=pointer]
+            - button "合成清单" [ref=e190] [cursor=pointer]
+        - paragraph [ref=e191]: 沈岚在旧宅发现银色怀表，雨夜冲突即将开始。
+        - group [ref=e192]:
+          - generic "编辑分集大纲" [ref=e193] [cursor=pointer]
+        - generic [ref=e194]:
+          - generic [ref=e195]:
+            - generic [ref=e196]:
+              - strong [ref=e197]: 声音与字幕时间线
+              - generic [ref=e198]: Remotion 合成时生效；音频上传后默认从 0 秒开始
+            - generic [ref=e199]:
+              - text: 上传音频
+              - button "上传音频" [ref=e200] [cursor=pointer]
+          - generic [ref=e201]:
+            - generic [ref=e202]: 音轨 0
+            - generic [ref=e203]: 字幕 0
+            - generic [ref=e204]: 未配置附加轨道
+          - generic [ref=e205]: 上传音频后可调整起点和音量。
+          - textbox "每行一条字幕，例如：0-3 | 她推开门。" [ref=e207]
+          - button "保存声音与字幕时间线" [ref=e208] [cursor=pointer]
+        - article [ref=e210]:
+          - generic [ref=e211]:
+            - generic [ref=e212]: 镜头 01
+            - generic [ref=e213]: 待确定情绪
+          - generic [ref=e214]: 尚未生成关键帧
+          - paragraph [ref=e216]: 沈岚在旧宅发现银色怀表，雨夜冲突即将开始。
+          - group [ref=e217]:
+            - generic "编辑分镜" [ref=e218] [cursor=pointer]
+          - button "生成图片提示词" [ref=e219] [cursor=pointer]
+          - button "生成预览" [ref=e221] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]
+  - alert [ref=e48]

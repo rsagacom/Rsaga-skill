@@ -1,0 +1,132 @@
+# CI-only production integration override.  It keeps STUDIO_ENV=production and
+# the real PostgreSQL/Redis/MinIO/BullMQ topology, while replacing external model
+# endpoints with deterministic contract mocks.  Never use this file as production.
+services:
+  mock-text:
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ..
+      dockerfile: infra/mock-provider.Dockerfile
+    command: ["--kind", "text", "--host", "0.0.0.0", "--port", "8080"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mock-comfyui:
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ..
+      dockerfile: infra/mock-provider.Dockerfile
+    command: ["--kind", "comfyui", "--host", "0.0.0.0", "--port", "8188"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mock-stripe:
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    build:
+      context: ..
+      dockerfile: infra/mock-provider.Dockerfile
+    command: ["--kind", "stripe", "--host", "0.0.0.0", "--port", "8090"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  config-check:
+    environment:
+      CI: "true"
+      STUDIO_BILLING_CI_MODE: "true"
+      STUDIO_BILLING_PROVIDER: stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_API_BASE_URL: http://mock-stripe:8090
+      STUDIO_BILLING_SUCCESS_URL: https://ci.example.test/billing/success
+      STUDIO_BILLING_CANCEL_URL: https://ci.example.test/billing/cancel
+      STUDIO_TEXT_PROVIDER: openai-compatible
+      STUDIO_TEXT_BASE_URL: http://mock-text:8080/v1
+      STUDIO_TEXT_MODEL: ci-mock-text
+      STUDIO_TEXT_API_KEY: ci-text-provider-key
+      STUDIO_IMAGE_PROVIDER: comfyui
+      STUDIO_VIDEO_PROVIDER: comfyui
+      STUDIO_VISION_PROVIDER: openai-compatible
+      STUDIO_VISION_BASE_URL: http://mock-text:8080/v1
+      STUDIO_VISION_MODEL: ci-mock-vision
+      STUDIO_VISION_API_KEY: ci-vision-provider-key
+      STUDIO_SPEECH_PROVIDER: openai
+      STUDIO_SPEECH_BASE_URL: http://mock-text:8080/v1
+      STUDIO_SPEECH_MODEL: ci-mock-speech
+      STUDIO_SPEECH_API_KEY_ENV: OPENAI_API_KEY
+      OPENAI_API_KEY: ci-speech-provider-key
+      COMFYUI_BASE_URL: http://mock-comfyui:8188
+      COMFYUI_IMAGE_WORKFLOW: /app/workflows/ci-image.json
+      COMFYUI_VIDEO_WORKFLOW: /app/workflows/ci-video.json
+    depends_on:
+      mock-text:
+        condition: service_healthy
+      mock-comfyui:
+        condition: service_healthy
+      mock-stripe:
+        condition: service_healthy
+
+  api:
+    environment:
+      CI: "true"
+      STUDIO_BILLING_CI_MODE: "true"
+      STUDIO_BILLING_PROVIDER: stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_API_BASE_URL: http://mock-stripe:8090
+      STUDIO_BILLING_SUCCESS_URL: https://ci.example.test/billing/success
+      STUDIO_BILLING_CANCEL_URL: https://ci.example.test/billing/cancel
+      STUDIO_COMPOSE_ENGINE: remotion
+      STUDIO_TEXT_PROVIDER: openai-compatible
+      STUDIO_TEXT_BASE_URL: http://mock-text:8080/v1
+      STUDIO_TEXT_MODEL: ci-mock-text
+      STUDIO_TEXT_API_KEY: ci-text-provider-key
+      STUDIO_IMAGE_PROVIDER: comfyui
+      STUDIO_VIDEO_PROVIDER: comfyui
+      STUDIO_VISION_PROVIDER: openai-compatible
+      STUDIO_VISION_BASE_URL: http://mock-text:8080/v1
+      STUDIO_VISION_MODEL: ci-mock-vision
+      STUDIO_VISION_API_KEY: ci-vision-provider-key
+      STUDIO_SPEECH_PROVIDER: openai
+      STUDIO_SPEECH_BASE_URL: http://mock-text:8080/v1
+      STUDIO_SPEECH_MODEL: ci-mock-speech
+      STUDIO_SPEECH_API_KEY_ENV: OPENAI_API_KEY
+      OPENAI_API_KEY: ci-speech-provider-key
+      COMFYUI_BASE_URL: http://mock-comfyui:8188
+      COMFYUI_IMAGE_WORKFLOW: /app/workflows/ci-image.json
+      COMFYUI_VIDEO_WORKFLOW: /app/workflows/ci-video.json
+    depends_on:
+      mock-text:
+        condition: service_healthy
+      mock-comfyui:
+        condition: service_healthy
+      mock-stripe:
+        condition: service_healthy
+
+  web:
+    # The CI stack exposes Web and API on separate localhost ports, so its
+    # browser-only build uses a direct local URL. Production must use the
+    # base Compose default (same-origin) behind an HTTPS ingress.
+    build:
+      args:
+        NEXT_PUBLIC_API_BASE: http://localhost:8787

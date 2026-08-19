@@ -1,0 +1,39 @@
+{
+  "1": {"class_type": "UNETLoader", "inputs": {"unet_name": "minimax_h3_fl2va_int8_convrot.safetensors", "weight_dtype": "default"}},
+  "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen3vl_32b_minimax_h3_int4_convrot.safetensors", "device": "cpu", "type": "minimax"}},
+  "3": {"class_type": "VAELoader", "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"}},
+  "4": {"class_type": "VAELoader", "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"}},
+  "5": {"class_type": "LoraLoaderBypassModelOnly", "inputs": {"lora_name": "minimax_h3_turbo_v4_step600_comfyui_T8-convert.safetensors", "model": ["1", 0], "strength_model": 1.0}},
+  "6": {"class_type": "MiniMaxH3AudioConditioningT8", "inputs": {
+    "add_source_as_reference": false,
+    "audio_denoise_strength": 1.0,
+    "audio_mode": "native",
+    "audio_vae": ["4", 0],
+    "clip": ["2", 0],
+    "height": 480,
+    "length": 362,
+    "prompt": "integrated_multimodal_description: [Shot 1] Live-action, cinematic, widescreen science-fiction suspense in an abandoned park at the edge of a city at winter dusk. A cracked stone path runs through tall weeds. A single crooked old metal playground slide stands on the right side of the path, with nearly black rainwater collected in its lower tray. A rust-red sunset shines from behind a damaged wall. The camera tracks forward along the path from a low position with small amplitude at slow speed. During the final part of the same continuous shot, the camera gently pulls out and performs a small pedestal up, revealing a dry riverbed and a real horizontal old stone bridge in the distance, built from visible masonry blocks with one broad round arch. Keep the horizon level and keep the path, wall, slide, sunset direction, riverbed, and bridge in one stable spatial layout. No people, no cuts, no sudden zoom, no tunnel, no hole in the ground, no extra slide, no second bridge.\n\noverall_soundscape: Cold wind moves through dry weeds, with faint metal creaks from the abandoned playground and a soft distant city hum.\n\nnon_diegetic_music: N/A",
+    "prompt_primary_audio_ordinal": 0,
+    "ref_image_size": "match",
+    "reference_video_policy": "official_2_to_15s",
+    "strict_prompt_tags": true,
+    "task_type": "T2VA",
+    "video_vae": ["3", 0],
+    "width": 832
+  }},
+  "7": {"class_type": "MiniMaxH3DualClockSamplerT8", "inputs": {
+    "av_latent": ["6", 1],
+    "model": ["5", 0],
+    "sampler_name": "dual_clock_euler",
+    "scheduler": "native_flow",
+    "shift_audio": 3.0,
+    "shift_video": 12.0,
+    "steps": 8
+  }},
+  "8": {"class_type": "RandomNoise", "inputs": {"noise_seed": 20260815}},
+  "9": {"class_type": "BasicGuider", "inputs": {"conditioning": ["6", 0], "model": ["7", 0]}},
+  "10": {"class_type": "SamplerCustomAdvanced", "inputs": {"guider": ["9", 0], "latent_image": ["6", 1], "noise": ["8", 0], "sampler": ["7", 1], "sigmas": ["7", 2]}},
+  "11": {"class_type": "MiniMaxH3AVDecodeT8", "inputs": {"audio_vae": ["4", 0], "av_latent": ["10", 0], "video_vae": ["3", 0]}},
+  "12": {"class_type": "CreateVideo", "inputs": {"audio": ["11", 1], "bit_depth": 8, "fps": 24.0, "images": ["11", 0]}},
+  "13": {"class_type": "SaveVideo", "inputs": {"codec": "auto", "filename_prefix": "h3_s04a_t8_dualclock_int8_int4clip_audio_480p_15s_8steps", "format": "mp4", "video": ["12", 0]}}
+}

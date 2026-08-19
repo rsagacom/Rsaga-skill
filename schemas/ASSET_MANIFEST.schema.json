@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://novel-to-comic-engine.local/schemas/ASSET_MANIFEST.schema.json",
+  "title": "Asset Manifest — 资产身份证",
+  "description": "所有生成资产、参考资产和导入素材的统一清单。身份由 asset_id 承载，不依赖文件名或目录位置。",
+  "type": "object",
+  "required": ["manifest_version", "project_id", "assets"],
+  "properties": {
+    "manifest_version": { "type": "string", "const": "1.0" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/AssetEntry" }
+    }
+  },
+  "$defs": {
+    "AssetEntry": {
+      "type": "object",
+      "required": [
+        "asset_id", "asset_type", "version", "status",
+        "media_refs", "created_at"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "稳定 ID，如 CHAR_001_FACE_v02 / ASSET_<uuid> / SHOT_014_003_007",
+          "pattern": "^[A-Z][A-Z0-9_\\-]+(_v\\d+)?$|^ASSET_[0-9a-f-]{36}$"
+        },
+        "project_id": { "type": "string" },
+        "asset_type": {
+          "type": "string",
+          "enum": [
+            "character_sheet", "turnaround_3view", "expression_pack", "pose_pack",
+            "costume_reference", "prop_reference", "scene_reference", "keyframe",
+            "storyboard_image", "previs_clip", "final_video_segment",
+            "final_video_master", "dialogue_wav", "sfx", "bgm", "subtitle",
+            "workflow_snapshot", "prompt_snapshot"
+          ]
+        },
+        "parent_asset_id": {
+          "type": ["string", "null"],
+          "description": "血缘：CHAR_001_FACE_v02 的 parent 是 CHAR_001"
+        },
+        "version": { "type": "integer", "minimum": 1 },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "pending_review", "adopted", "locked", "superseded", "rejected"]
+        },
+        "source": {
+          "type": "object",
+          "description": "来源段落引用，追溯资产由哪个设定/段落驱动",
+          "properties": {
+            "kind": { "type": "string", "enum": ["canon", "chapter", "script", "shot", "manual", "external"] },
+            "ref_id": { "type": "string" },
+            "canon_revision": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "generation": {
+          "type": "object",
+          "properties": {
+            "provider": { "type": "string" },
+            "workflow_id": { "type": "string" },
+            "workflow_revision": { "type": "string" },
+            "model_revision": { "type": "string" },
+            "lora_ids": { "type": "array", "items": { "type": "string" } },
+            "seed": { "type": ["integer", "null"] },
+            "resolution": { "type": ["string", "null"] },
+            "fps": { "type": ["integer", "null"] },
+            "steps": { "type": ["integer", "null"] },
+            "prompt_revision": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "media_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rel_path", "media_type"],
+            "properties": {
+              "rel_path": { "type": "string" },
+              "media_type": { "type": "string", "enum": ["image", "video", "audio", "subtitle", "manifest", "other"] },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "size_bytes": { "type": ["integer", "null"] },
+              "ffprobe": { "type": ["object", "null"] },
+              "decoded_fully": { "type": ["boolean", "null"], "description": "完整解码是否通过" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "license": {
+          "type": ["string", "null"],
+          "description": "许可证条目 ID，见 RIGHTS_AND_LICENSES.md"
+        },
+        "review_status": {
+          "type": "string",
+          "enum": ["pending", "pass", "retake", "regenerate", "patch_in_edit", "blocked"]
+        },
+        "adopted_at": { "type": ["string", "null"], "format": "date-time" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "locked_by": { "type": ["string", "null"] },
+        "downstream_refs": {
+          "type": "array",
+          "description": "引用本资产的下游 ID：分镜图/视频/音频/时间线条目",
+          "items": { "type": "string" }
+        },
+        "forbidden_changes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "锁定期资产禁止变化的维度"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,2 @@
+[      44ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://127.0.0.1:3000/_next/static/chunks/app/page-a3c8075740bc9906.js:0
+[      44ms] [ERROR] Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/app/page-a3c8075740bc9906.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:3000/:0

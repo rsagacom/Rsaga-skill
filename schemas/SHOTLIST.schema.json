@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://novel-to-comic-engine.local/schemas/SHOTLIST.schema.json",
+  "title": "ShotList Schema — 镜头级合同",
+  "description": "镜头不能只存一段 prompt。本 schema 定义分镜、Animatic、视频生成、音频、时间线与 QC 共用的结构化镜头合同。",
+  "type": "object",
+  "required": ["shotlist_version", "project_id", "shots"],
+  "properties": {
+    "shotlist_version": { "type": "string", "const": "1.0" },
+    "project_id": { "type": "string" },
+    "shots": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Shot" }
+    }
+  },
+  "$defs": {
+    "Shot": {
+      "type": "object",
+      "required": [
+        "id", "duration_sec", "framing", "camera", "action",
+        "assets", "negatives", "continuity_from", "continuity_to",
+        "generation", "review_status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "如 SHOT_014_003_007（分集_场_镜号）",
+          "pattern": "^SHOT_[0-9]{3}_[0-9]{3}_[0-9]{3}$"
+        },
+        "episode_id": { "type": "string" },
+        "scene_id": { "type": "string" },
+        "unit_id": { "type": "string" },
+        "duration_sec": { "type": "number", "minimum": 0.5 },
+        "framing": {
+          "type": "string",
+          "enum": ["ECU", "CU", "MCU", "MS", "MWS", "WS", "EWS", "POV", "OTS", "INSERT"]
+        },
+        "camera": {
+          "type": "object",
+          "required": ["lens_mm", "movement", "height", "axis"],
+          "properties": {
+            "lens_mm": { "type": ["integer", "string"] },
+            "movement": {
+              "type": "string",
+              "enum": ["static", "slow_pan", "slow_push_in", "slow_pull_back", "track_left", "track_right", "handheld", "whip_pan"]
+            },
+            "height": {
+              "type": "string",
+              "enum": ["bird_eye", "high_angle", "eye_level", "low_angle", "worm_eye"]
+            },
+            "axis": {
+              "type": "string",
+              "enum": ["180_left", "180_right", "on_axis", "cross_axis_flagged"]
+            },
+            "position": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "action": { "type": "string", "minLength": 1 },
+        "dialogue": { "type": ["string", "null"] },
+        "emotion": { "type": ["string", "null"] },
+        "assets": {
+          "type": "array",
+          "description": "本镜头引用的资产身份证",
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_\\-]*(_v\\d+)?$" }
+        },
+        "reference_asset_ids": {
+          "type": "array",
+          "description": "R2V 首帧/参考图资产，首次注入后后续段不得重复",
+          "items": { "type": "string" }
+        },
+        "audio": {
+          "type": "object",
+          "properties": {
+            "sfx": { "type": "array", "items": { "type": "string" } },
+            "bgm": { "type": ["string", "null"] },
+            "ambient_bed": { "type": "array", "items": { "type": "string" } },
+            "tts": {
+              "type": "object",
+              "properties": {
+                "voice_profile_id": { "type": "string" },
+                "text": { "type": "string" },
+                "start_offset_sec": { "type": "number" },
+                "duration_sec": { "type": "number" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "continuity_from": { "type": ["string", "null"] },
+        "continuity_to": { "type": ["string", "null"] },
+        "continuity_notes": {
+          "type": "array",
+          "description": "跨镜连续性约定：手持伞、视线方向、服装状态等",
+          "items": { "type": "string" }
+        },
+        "negatives": { "type": "array", "items": { "type": "string" } },
+        "image_prompt": { "type": ["string", "null"] },
+        "negative_prompt": { "type": ["string", "null"] },
+        "generation": {
+          "type": "object",
+          "required": ["provider", "workflow_revision"],
+          "properties": {
+            "provider": { "type": "string" },
+            "mode": { "type": "string", "enum": ["t2v", "i2v", "r2v", "v2v", "long_video_first", "long_video_context"] },
+            "workflow_revision": { "type": "string" },
+            "lora_ids": { "type": "array", "items": { "type": "string" } },
+            "seed": { "type": ["integer", "null"] },
+            "resolution": { "type": "string" },
+            "fps": { "type": "integer" },
+            "steps": { "type": "integer" },
+            "frames": { "type": ["integer", "null"] },
+            "context_length": { "type": ["string", "integer", "null"] },
+            "audio_context_length": { "type": ["integer", "null"] },
+            "clip_index": { "type": ["integer", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "candidate_keyframe_id": { "type": ["string", "null"] },
+        "candidate_video_id": { "type": ["string", "null"] },
+        "review_status": {
+          "type": "string",
+          "enum": ["pending", "pass", "retake", "regenerate", "patch_in_edit", "blocked"]
+        },
+        "stale_after_revision": { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

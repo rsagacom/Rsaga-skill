@@ -1,0 +1,41 @@
+# 命运模型 Canon — 画风与镜头语言
+
+canon_schema_version: 1.0
+project: destiny-model
+status: draft
+
+style:
+  visual:
+    target: 风格化写实 3D CG / 游戏过场质感
+    not_target:
+      - 纯真人实拍
+      - 平面 2D 动漫
+    color_base: 暖色傍晚光
+    temperature_bias: warm
+    dof_preset: cinematic_shallow
+  character_style:
+    geometry_priority: "五官与服装连续优先于纹理细节"
+    costume_fidelity: strict   # 服装、配色不可漂移
+  camera_language:
+    default_fps: 24
+    default_aspect: wide        # 640×384 default production tier
+    moves_allowed: [static, slow_pan, slow_push_in, slow_pull_back]
+    axis_rule: "180° 轴线必须保持；跨轴切换必须显式标记并人工复核"
+  shots:
+    - id: STYLE_SHOT_ESTABLISHING
+      description: 远景开篇（桥面、人物入画）
+      camera: { size: WS, movement: slow_pan, height: eye_level }
+    - id: STYLE_SHOT_TURN_INSIDE
+      description: 侧身推进、角色进入阴影视角
+      camera: { size: MS, movement: slow_push_in, height: eye_level }
+  negatives:
+    - text_subtitles           # 画面禁止出现字幕样文字
+    - extra_fingers
+    - logo
+    - modern_car               # 违和现代元素
+    - white_reference_board_leak  # 三视图参考板泄漏
+  dialogue_rule: "H3 视觉提示词静默表演、无可读文字；对白由 CosyVoice3 后期完成"
+  adopted_tier:
+    batch: { width: 640, height: 384, fps: 24, steps: 8 }
+    selected: { width: 832, height: 480, fps: 24, steps: 8 }
+    hero: { width: 1088, height: 608, fps: 24, steps: 8 }

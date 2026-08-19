@@ -2,7 +2,7 @@
 
 ---
 
-## 一、改编层提示词（Kimi K2.7 → 编剧）
+## 一、改编层提示词（DS v4 Pro → 编剧）
 
 ### 输入：小说原文
 ### 输出：adaptation_chXX.md
@@ -178,8 +178,10 @@ Q = (
 ### 画风后缀模板（固定）
 
 ```python
-S = "Manhua ink wash, black white, dramatic lighting, G-pen linework, grayscale, realistic."
+S = "East Asian B/W manhua, G-pen ink, high-contrast grayscale, 2D comic, NOT photo, NOT photorealistic, NOT realistic face."
 ```
+
+注意：不要把 `realistic`、`photograph`、`photo-realistic`、`live-action`、`写实风格` 当正向词使用。压缩 prompt 时不能删除漫画画风后缀，否则画面容易回到真人照片/写实脸。
 
 ---
 
@@ -208,6 +210,12 @@ semi-transparent shadowy form, edges dissolving into smoke
 NO children, NO crowd, NO other people, empty abandoned
 ```
 
+### 文字层安全约束
+```
+NO readable text, no posters with readable words, no report body text, no title lettering.
+All dialogue, narration, title and SFX text will be added by BUBBLE_CONFIG/layout.
+```
+
 ---
 
 ## 五、视觉审查提示词（Step 3.7 Flash / Kimi K2.7）
@@ -225,6 +233,7 @@ NO children, NO crowd, NO other people, empty abandoned
 | hand | 无手部/畸形手指/多指 |
 | scene | 儿童/无关人群 |
 | abstract | 人物重影/画面撕裂 |
+| any | 真人照片感/写实脸/3D渲染感/图内乱码文字 |
 
 ---
 
@@ -281,3 +290,12 @@ BUBBLE_CONFIG = {
 ### ❌ 问题4：场景中出现无关元素
 - **现象**：抽象场景 → 模型自由发挥（猫/女孩/爆炸字）
 - **修复**：用极度具体的视觉描述，不要留白
+
+### ❌ 问题5：真人照片/写实脸混入
+- **现象**：画面不再像漫画，出现真人照片感或 live-action 质感
+- **根因**：正向使用 `realistic/写实风格`，或为了压缩 prompt 砍掉漫画画风后缀
+- **修复**：固定使用东亚黑白漫画后缀，并保留 `NOT photograph, NOT photorealistic, NOT realistic face`
+
+### ❌ 问题6：图内乱码文字/伪标题
+- **现象**：论坛帖、报告、标题、SFX 由生图模型画进图里，出现乱码和不可控字体
+- **修复**：prompt 写无可读文字；真实文字统一进入 `BUBBLE_CONFIG`，由排版层渲染

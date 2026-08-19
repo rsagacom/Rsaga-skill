@@ -20,9 +20,29 @@ def main():
     parser.add_argument("panels_dir", help="画格目录路径")
     parser.add_argument("--config", "-c", default=None, help="配置文件路径")
     parser.add_argument("--output", "-o", default=None, help="审核报告输出路径（JSON/Markdown）")
+    parser.add_argument("--provider", default=None,
+                        help="覆盖 config 的 vision provider：volc-k27=火山方舟 K2.7(读 VOLC_API_KEY)，step=stepfun 3.7 flash")
     args = parser.parse_args()
 
     config = load_config(args.config)
+
+    # --provider volc-k27：用火山方舟 K2.7（多模态可识图），key 从 VOLC_API_KEY 读
+    if args.provider == "volc-k27":
+        import os
+        volc_key = os.environ.get("VOLC_API_KEY")
+        if not volc_key:
+            sys.exit("ERROR: --provider volc-k27 需设 VOLC_API_KEY 环境变量")
+        config.setdefault("providers", {}).setdefault("vision", {})
+        config["providers"]["vision"]["default"] = "volc-k27"
+        config["providers"]["vision"]["volc-k27"] = {
+            "api_key": volc_key,
+            "api_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
+            "model": "kimi-k2.7-code",
+            "max_tokens": 6000,
+            "sleep_seconds": 1.5,
+        }
+        print(f"provider: volc-k27 (火山方舟 K2.7, 多模态识图)")
+
     results = audit_panels(args.panels_dir, config)
 
     if args.output:
