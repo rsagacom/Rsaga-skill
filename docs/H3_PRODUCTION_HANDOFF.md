@@ -1,8 +1,14 @@
 # MiniMax H3 本地生产交接手册（框架无关）
 
-> 版本：v1.6 · 更新时间：2026-08-15 · 适用主机：`host.cachyos-ai-desktop` / `cachyos-ai`  
+> 版本：v1.7 · 更新时间：2026-08-23（H3 统一迁移至 gaosu_nvme/h3-production） · 适用主机：`host.cachyos-ai-desktop` / `cachyos-ai`  
 > 目标：让 Codex、Claude Code、其他 Agent、脚本或人工运维都能从同一份事实记录恢复 H3 本地测试与生产链路。  
 > 本文只记录已验证事实、可复现命令和明确边界；不记录密码、Token、Cookie 或私钥内容。
+
+> **📍 2026-08-23 迁移通告（现行事实，优先级高于下文旧路径）**
+> H3 本地生产环境已从双盘缠绕（`/mnt/gaosu_sata` + `/mnt/sd_nvme/MiniMax-H3`）整体统一迁移至 **`/mnt/gaosu_nvme/h3-production/`**（自足，三道验收门全过）。
+> 路径映射：`/mnt/gaosu_nvme/h3-production/ComfyUI` → `/mnt/gaosu_nvme/h3-production/ComfyUI`；`/mnt/gaosu_nvme/h3-production/runtime` → `/mnt/gaosu_nvme/h3-production/runtime`；`/mnt/gaosu_nvme/h3-production/MiniMax-H3`、`MiniMax-H3-NF4`、`MiniMax-H3-diffsynth` → 同名子目录。
+> venv 现行：ComfyUI 主程序用共享环境 `/mnt/gaosu_nvme/AI-Linux/boogu/ComfyUI/.venv`（py3.14.6，含 sqlalchemy/transformers/sageattention/torch）；`runtime/runtime-venv` 为节点侧 torch/sageattention 环境。隔离实例端口建议 **8192**（8189 已被 boogu-api 占用）。
+> 旧盘即将随「高速sata NTFS→XFS 转换」清空重格；本文历史证据段落中的旧路径仅作历史记录，不代表现存位置。验收证据：Atlas `task-20260822-150643-0fe352`（节点门 + 2026-08-17 短链×2 + 2026-08-19 长链 Director+MotionContext 接力全部 success，LoRA 每次 call `is_injected=True`，旧盘模型加载 = 0）。
 
 ## 0.4 离线评测资料台（2026-08-15）
 
@@ -81,9 +87,9 @@ Director 和独立 Motion Context 不要在同一个 ComfyUI 进程叠加运行�
 | Motion Context 隔离测试 | `8190`，历史测试端口；不要与正式端口并发抢 GPU |
 | Director 隔离测试 | `8191`，历史测试端口；不要与正式端口并发抢 GPU |
 | 微信 Bot | `/mnt/gaosu_sata/wechat-linux-bot/bot/reply_bot.py`；严禁为 H3 测试停止、清理或改路由 |
-| H3 启动目录 | `/mnt/sd_nvme/MiniMax-H3/ComfyUI` |
-| ComfyUI base directory | `/mnt/gaosu_sata/ComfyUI` |
-| H3 user directory | `/mnt/sd_nvme/MiniMax-H3/user-8189` |
+| H3 启动目录 | `/mnt/gaosu_nvme/h3-production/runtime/ComfyUI` |
+| ComfyUI base directory | `/mnt/gaosu_nvme/h3-production/ComfyUI` |
+| H3 user directory | `/mnt/gaosu_nvme/h3-production/runtime/user-8189` |
 
 每轮测试前后必须检查：
 
@@ -125,31 +131,31 @@ curl -fsS http://127.0.0.1:8189/queue
 
 | 用途 | 远端 canonical 路径 | 已核对大小 |
 |---|---|---:|
-| H3 非剪枝 INT8 FL2VA | `/mnt/sd_nvme/MiniMax-H3/quark-package/models/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors`（由 ComfyUI 软链接接入） | 34,038,892,334 bytes |
-| H3 裁剪 INT4 FL2VA | `/mnt/gaosu_sata/ComfyUI/models/diffusion_models/minimax_h3_fl2va_pruned_int4_convrot.safetensors` | 11,337,536,776 bytes |
-| Qwen H3 INT4 文本编码器 | `/mnt/gaosu_sata/ComfyUI/models/text_encoders/qwen3vl_32b_minimax_h3_int4_convrot.safetensors` | 14,952,506,624 bytes |
-| Qwen H3 NVFP4/AWQ | `/mnt/gaosu_sata/ComfyUI/models/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | 15,687,142,551 bytes |
-| 视频 VAE | `/mnt/gaosu_sata/ComfyUI/models/vae/minimax_h3_video_vae_fp16.safetensors` | 5,207,808,496 bytes |
-| 音频 VAE | `/mnt/gaosu_sata/ComfyUI/models/vae/minimax_h3_audio_vae_fp32.safetensors` | 605,254,808 bytes |
-| T8 转换 Turbo LoRA | `/mnt/gaosu_sata/ComfyUI/models/loras/minimax_h3_turbo_v4_step600_comfyui_T8-convert.safetensors` | 779,858,903 bytes |
+| H3 非剪枝 INT8 FL2VA | `/mnt/gaosu_nvme/h3-production/runtime/quark-package/models/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors`（由 ComfyUI 软链接接入） | 34,038,892,334 bytes |
+| H3 裁剪 INT4 FL2VA | `/mnt/gaosu_nvme/h3-production/ComfyUI/models/diffusion_models/minimax_h3_fl2va_pruned_int4_convrot.safetensors` | 11,337,536,776 bytes |
+| Qwen H3 INT4 文本编码器 | `/mnt/gaosu_nvme/h3-production/ComfyUI/models/text_encoders/qwen3vl_32b_minimax_h3_int4_convrot.safetensors` | 14,952,506,624 bytes |
+| Qwen H3 NVFP4/AWQ | `/mnt/gaosu_nvme/h3-production/ComfyUI/models/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | 15,687,142,551 bytes |
+| 视频 VAE | `/mnt/gaosu_nvme/h3-production/ComfyUI/models/vae/minimax_h3_video_vae_fp16.safetensors` | 5,207,808,496 bytes |
+| 音频 VAE | `/mnt/gaosu_nvme/h3-production/ComfyUI/models/vae/minimax_h3_audio_vae_fp32.safetensors` | 605,254,808 bytes |
+| T8 转换 Turbo LoRA | `/mnt/gaosu_nvme/h3-production/ComfyUI/models/loras/minimax_h3_turbo_v4_step600_comfyui_T8-convert.safetensors` | 779,858,903 bytes |
 
 主生产 LoRA（剪枝底座专用）另见：
-`/mnt/gaosu_sata/ComfyUI/models/loras/minimax_h3_turbo_v4_step600_ema_pruned_rawkeys.safetensors`；其原始专用 LoRA 与 raw-key 适配文件的 SHA-256、注入日志和 5/15 秒媒体证据记录在 `test-runs/2026-08-17-h3-pruned-lora-15s/REPORT.md`。
+`/mnt/gaosu_nvme/h3-production/ComfyUI/models/loras/minimax_h3_turbo_v4_step600_ema_pruned_rawkeys.safetensors`；其原始专用 LoRA 与 raw-key 适配文件的 SHA-256、注入日志和 5/15 秒媒体证据记录在 `test-runs/2026-08-17-h3-pruned-lora-15s/REPORT.md`。
 
 资产注意事项：
 
 - `minimax_h3_turbo_v4_step600_comfyui_T8-convert.safetensors` 必须配非剪枝 `minimax_h3_fl2va_int8_convrot.safetensors`，不能配 `pruned` 底座。
 - 当前目录中存在下载残留的 `.partial`、`.chunk`、带 URL 查询参数的文件；它们不是可加载资产，不能拿来做模型存在性判断。
-- `/mnt/gaosu_sata/ComfyUI/models/loras/minimax_h3_turbo_4STEPS_comfyui.safetensors` 当前仅 94 bytes，是占位/残留文件，不是本轮使用的有效 LoRA。
+- `/mnt/gaosu_nvme/h3-production/ComfyUI/models/loras/minimax_h3_turbo_4STEPS_comfyui.safetensors` 当前仅 94 bytes，是占位/残留文件，不是本轮使用的有效 LoRA。
 - NVFP4/AWQ 文本编码器曾在当前 ComfyUI 0.31.0 的 CLIPLoader 路径出现 `utf-32-be truncated data`；默认复现使用已通过的 INT4 Qwen。
 
 ### 3.2 自定义节点
 
 | 节点目录 | 已核对 commit | 用途 |
 |---|---|---|
-| `/mnt/gaosu_sata/ComfyUI/custom_nodes/comfyui-minimax-h3-audio-T8` | `7a99dba` | H3 音视频节点、T8 双时钟采样链 |
-| `/mnt/gaosu_sata/ComfyUI/custom_nodes/ComfyUI-MiniMax-H3-Turbo` | `55fee86` | H3 Turbo 基础节点 |
-| `/mnt/gaosu_sata/ComfyUI/custom_nodes/ComfyUI_MiniMaxH3_Director_AIMixer` | `4c9c58a` | Director 时间轴和段间引导 |
+| `/mnt/gaosu_nvme/h3-production/ComfyUI/custom_nodes/comfyui-minimax-h3-audio-T8` | `7a99dba` | H3 音视频节点、T8 双时钟采样链 |
+| `/mnt/gaosu_nvme/h3-production/ComfyUI/custom_nodes/ComfyUI-MiniMax-H3-Turbo` | `55fee86` | H3 Turbo 基础节点 |
+| `/mnt/gaosu_nvme/h3-production/ComfyUI/custom_nodes/ComfyUI_MiniMaxH3_Director_AIMixer` | `4c9c58a` | Director 时间轴和段间引导 |
 | `ComfyUI-KJNodes` | 白名单加载 | SageAttention KJ、辅助节点 |
 | `ComfyUI-Jjk-Nodes` | 白名单加载 | 工作流辅助节点 |
 | `rgthree-comfy` | 白名单加载 | 分组/旁路辅助 |
@@ -157,30 +163,30 @@ curl -fsS http://127.0.0.1:8189/queue
 | `ComfyUI_UniBlockSwap` | 白名单加载 | 低显存辅助 |
 | `ComfyUI-ReservedVRAM` | 白名单加载 | 显存预留 |
 
-Director 节点必须放在 ComfyUI 实际 `--base-directory` 下的 `custom_nodes`；本机正确目录是 `/mnt/gaosu_sata/ComfyUI/custom_nodes/ComfyUI_MiniMaxH3_Director_AIMixer`。Director 工作流隐藏输入 `bd_grp_sample`、`bd_grp_advanced`、`bd_grp_perf` 必须存在，否则会出现 API 400。
+Director 节点必须放在 ComfyUI 实际 `--base-directory` 下的 `custom_nodes`；本机正确目录是 `/mnt/gaosu_nvme/h3-production/ComfyUI/custom_nodes/ComfyUI_MiniMaxH3_Director_AIMixer`。Director 工作流隐藏输入 `bd_grp_sample`、`bd_grp_advanced`、`bd_grp_perf` 必须存在，否则会出现 API 400。
 
-## 4. 正式 H3 运行链
+## 4. 正式 H3 运行链（2026-08-30 起：systemd 按需托管，取代裸启动）
 
-当前正式服务的启动形态：
+**现行唯一启动方式**（cachyos-ai 上）：
 
 ```bash
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-/mnt/gaosu_sata/AI-Linux/boogu/ComfyUI/.venv/bin/python \
-/mnt/sd_nvme/MiniMax-H3/ComfyUI/main.py \
-  --listen 0.0.0.0 \
-  --port 8189 \
-  --base-directory /mnt/gaosu_sata/ComfyUI \
-  --user-directory /mnt/sd_nvme/MiniMax-H3/user-8189 \
-  --database-url sqlite:////mnt/sd_nvme/MiniMax-H3/user-8189/comfyui.db \
-  --disable-auto-launch \
-  --lowvram \
-  --fp16-vae \
-  --use-sage-attention \
-  --disable-all-custom-nodes \
-  --whitelist-custom-nodes ComfyUI-MiniMax-H3-Turbo comfyui-minimax-h3-audio-T8 ComfyUI-KJNodes ComfyUI-Jjk-Nodes rgthree-comfy ComfyUI-VideoHelperSuite ComfyUI_UniBlockSwap ComfyUI-ReservedVRAM
+ssh cachyos-ai '~/.local/bin/h3-ctl on'      # 拉起：自动卸 LLM → 起 8192 → 健康轮询
+ssh cachyos-ai '~/.local/bin/h3-ctl status'  # 单元状态 + 8192 探活 + 显存占用
+ssh cachyos-ai '~/.local/bin/h3-ctl off'     # 主动清退（平时不用：LLM 请求会自动清退它）
 ```
 
-本机已经通过启动日志和节点实测确认 SageAttention 生效。不要把 `--use-sage-attention` 当成唯一优化：它必须和低显存加载、FP16 VAE、T8 专用采样器、正确 LoRA/底座组合使用。
+- 单元：`~/.config/systemd/user/rsaga-h3-comfyui.service`（**故意不 enable**：按需档，
+  重启不自启；`Restart=no`）。ExecStart 为原裸进程 cmdline 的逐参数复制：
+  venv=`runtime/venv-0.34.0`（注意：不再是 boogu 共享 .venv）、tree=`ComfyUI-v0.34.0-tree`、
+  端口 **8192**、user-dir `user-8192-034`、白名单 20+ 节点（ClipProj/GGUF-MiniMax-H3/
+  BlockCache-T8/Spectrum/PDD-Acc/FaceRefine/H3-Motion-Context/Director_AIMixer…，
+  完整串见单元文件）。`ExecStartPre=gpu-claim-h3.sh` 先调 llama-swap unload 卸 LLM。
+- **显存排他**：12GB 卡上 LLM(qwen3.8 48k) 与 H3 互斥——LLM 请求到达时
+  `gpu-claim-llama.sh` 会 `systemctl --user stop` 本单元（SIGINT 优雅停，"H3 进程怎么没了"
+  先查这里，机制详见 cachyos-ai `~/.config/llama-swap/BLUEPRINT.md` §4.5）。
+  **红线：渲染队列进行中勿触发 LLM 请求**，锁会硬停队列。
+- 历史（2026-08-23 版）启动形态归档：曾以 boogu 共享 .venv 裸跑 `--port 8189`
+  （后被 8192 隔离实例取代）；该段命令已失效，仅留 Git 历史可考。
 
 ### 4.1 质量/速度默认参数
 
