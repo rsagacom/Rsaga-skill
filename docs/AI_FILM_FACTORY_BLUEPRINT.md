@@ -1,11 +1,13 @@
 # AI 影视创作工厂总蓝图
 
-版本：v1.1（2026-08-18）  
+版本：v1.2（2026-08-21）  
 项目：`novel-to-comic-engine`  
 产品暂定名：AI 影视创作工厂  
 原产品名：小说转漫画/漫剧引擎（保留为兼容性项目名）
 
-本版本吸收 K3 对量产控制平面的补充建议。新增内容属于架构规划和数据合同，尚未全部实现或实测；已验证的 H3 参数、模型、耗时和媒体结论仍以 H3 专项交接文档为准。
+v1.2 新增 §26「开源 H3 工作站参考部件：Kevrai-Omni 融合」，把已核实的开源 H3 工作站事实、参数、硬件分档与下载门禁并入蓝图，并吸收本平台既有 MiniMax H3 测试运行经验；Kevrai-Omni 代码为 CC BY-NC-SA 4.0（非商用），平台只吸收事实与门禁思想、不复制其代码。
+
+v1.1 吸收 K3 对量产控制平面的补充建议。新增内容属于架构规划和数据合同，尚未全部实现或实测；已验证的 H3 参数、模型、耗时和媒体结论仍以 H3 专项交接文档为准。
 
 ## 1. 产品定位
 
@@ -223,6 +225,10 @@ AI 的输出必须是“候选稿/候选资产”，不能未经确认直接改�
 | Blender | 不属于扩散视频 | 相机/场景/角色可控 | 外接 | 3D CG 最强 | 确定性片场和预演，不替代生成模型 |
 
 模型路由必须按能力声明而不是按模型名称硬编码：`t2v`、`i2v`、`r2v`、`v2v`、`audio`、`long_video`、`lora`、`control`、`upscale`、`max_frames`、`recommended_resolution`、`vram_profile`、`license`、`local_or_remote`。
+
+### 6.4 开源 H3 工作站部件（Kevrai-Omni 参考融合）
+
+Kevrai-Omni（MiniMax H3 Studio，`github.com/Bullobis/Kevrai-omni`）被列为本平台的**开源 H3 工作站参考部件**：它是一份已核实的 H3 单机工作站参考实现，平台吸收其事实库、参数闭环、硬件分档和下载门禁，但其代码（CC BY-NC-SA 4.0，非商用）与其 PySide6 桌面形态均不进入生产链。融合合同详见 §26。
 
 ## 7. 生成工具链设计
 
@@ -773,6 +779,7 @@ project + shot + canon_revision + asset_revision + prompt_revision
 - [PySceneDetect](https://github.com/Breakthrough/PySceneDetect)：镜头切点和场景检测。
 - [Temporal](https://github.com/temporalio/temporal)：未来跨服务长任务恢复候选，MVP 不替换现有 BullMQ。
 - [Remotion License](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md)：现有 Remotion 继续作为可选合成器，但必须单独做商业许可证审查。
+- [Kevrai-Omni / MiniMax H3 Studio](https://github.com/Bullobis/Kevrai-omni)：开源 H3 工作站参考部件（§26）。软件代码 CC BY-NC-SA 4.0（署名-非商业性使用-相同方式共享），禁止商用；平台仅吸收其已核实的 H3 事实、参数与门禁思想，不复制代码。MiniMax H3 权重另受 Community License 约束（排除美国/欧盟/英国/韩国）。
 
 ## 24. 当前结论
 
@@ -824,3 +831,99 @@ project + shot + canon_revision + asset_revision + prompt_revision
 Whisper 负责音频适配。以后引入工作流、时间线、编解码、视觉审核、模型或插件时，必须先做
 成熟开源组件复用评估，并记录许可证、版本/commit、国内源优先下载证据和真实运行验证；只有
 无法满足平台合同的部分才写薄 adapter，不复制底座能力。
+
+### v1.2 蓝图更新（2026-08-21，dsh）
+
+- 新增 §6.4 与 §26：Kevrai-Omni 开源 H3 工作站部件融合——H3 能力事实卡、生成模式合同、硬件分档合并表、R1–R5 下载门禁、生产/参考双链分工与技术栈版本基线。本轮仅文档变更：未下载、未安装、未复制任何第三方代码。
+
+## 26. 开源 H3 工作站参考部件：Kevrai-Omni 融合
+
+本章按用户决定写入，目标是把开源项目 Kevrai-Omni（MiniMax H3 Studio）中已核实的事实、参数与门禁，与本平台既有 MiniMax H3 测试运行经验合并为统一的“H3 工作站部件”事实源与执行合同，避免重复制造轮子。
+
+### 26.1 部件定位与硬边界
+
+Kevrai-Omni 在平台中承担三个角色：
+
+1. **H3 能力事实源**：模型规格、输入限制、分辨率档位、官方默认参数。
+2. **硬件分档与下载门禁的参考实现**：显存策略、真实测速、断点续传、量化成套校验。
+3. **第二执行后端的隔离 A/B 通道**：DiffSynth-Studio 路线，与已收口的 ComfyUI 生产链隔离，不进入默认生产。
+
+硬边界：该软件为 CC BY-NC-SA 4.0（NC 禁止商用、SA 传染、BY 署名），H3 权重为 MiniMax Community License 且排除美国/欧盟/英国/韩国。平台的融合方式是“吸收事实、参数、门禁思想，由平台自研薄 adapter 承载”，不复制其代码、不并入其 PySide6 桌面形态；若未来需要商业交付级别的复用，必须单独取得授权或切换到许可兼容的替代实现。
+
+### 26.2 H3 能力事实卡（并入 canon/MODEL_REGISTRY.md）
+
+| 事实 | 值 | 性质 |
+|---|---|---|
+| 帧率 | 固定 24 fps | 官方规格 |
+| 音频 | 32kHz 立体声原生 | 官方规格 |
+| 单段时长 | 4–15 秒 | 官方规格 |
+| 帧数对齐 | `num_frames` 向上取整到 `17n+5` | DiffSynth 官方规则 |
+| 分辨率约束 | 宽、高必须为 32 的倍数；默认 1344×768 | 官方规格 |
+| 分辨率档位 | 16:9 → 832×480 / 1152×640 / 1344×768；9:16 → 480×832 / 640×1152 / 768×1344；1:1 / 4:3 / 3:4 / 21:9 同档 | 已核实 |
+| CFG | CFG 蒸馏模型，negative_prompt 默认无效（cfg_scale=1.0） | 官方规格 |
+| Ref2VA 输入上限 | ≤9 图、≤3 视频、≤3 音频、合计 ≤12；单段 2–15s 且各自总时长 ≤15s；音频不能单独作为唯一输入 | 官方仓库核实 |
+| FL2VA 关键帧 | 首尾帧 ≤2 张 | 官方规格 |
+| 开源范围 | H3-Base（FL2VA + Ref2VA）；H3-Context-IR 与 2K 再生仅官方 API，开源版短边上限 768 | 官方发布页 |
+
+写入规则：以上条目作为 `canon/MODEL_REGISTRY.md` 的 H3 条目与 provider capability manifest 的输入校验基线；任何 UI/API 层必须在提交任务前按此表拒绝超限输入，而不是把错误留给引擎。
+
+### 26.3 生成模式合同（映射到 §10 ShotPlan/GenerationJob）
+
+`t2va`（文生视频）、`first`（首帧）、`last`（尾帧）、`fl`（首尾帧）、`ref2va`（全模态参考）、`audio_driven`（音频驱动）、`retake`（视频局部重生成）作为统一的 provider capability 枚举。`retake` 直接映射到 §8.2 失败分段重跑与 §13.2 RenderJob 局部重跑合同：同一 shot 的局部重生成必须携带源视频引用与起止时间码，不整段重抽。
+
+### 26.4 硬件分档与实测速度合并表
+
+本平台既有实测与 Kevrai-Omni 收集的社区实测合并为同一张硬件路由表；所有数字必须标注来源与日期，`declared ≠ verified`：
+
+| 硬件 | 实测结论 | 来源 |
+|---|---|---|
+| RTX 3060 12GB + 32GB RAM（本平台 `cachyos-ai`） | 832×480/124帧/24fps T8 基线 891.58s、Drbaph Ref2V 831.04s；640×384 Motion Context 4 段 15 秒精确成片（drift 0.00ms）；1088×608 15 秒约 46 分钟 | 本平台 2026-08-14～18 实测（test-runs/） |
+| RTX 3060 12GB + 32GB RAM | 480P/5s ≈ 9 分钟 | Kevrai-Omni 引用 B站 ComfyUI 团队实测 2026-08 |
+| RTX 4090 24GB + 64GB RAM | 15s 视频 ≈ 14–22 分钟 | Kevrai-Omni 引用社区实测 2026-08 |
+| RTX 5090 32GB | 480P/5s ≈ 80 秒；720P/10s ≈ 9 分钟 | Kevrai-Omni 引用 B站实测 2026-08 |
+
+显存分档策略（供 planner/资源租约参考）：≥48GB 可考虑 BF16 全精度；16–48GB 走 NF4 双分区；8–16GB 走 NF4 FL2VA 单分区；本平台生产主链（剪枝 INT8 + 专用 LoRA + `--lowvram --fp16-vae --use-sage-attention`）在 12GB 档位已收口验证，优先级高于通用分档推断。
+
+### 26.5 模型资产下载门禁（R1–R5 硬校验 + 测速续传）
+
+新组件下载前必须通过（与 Atlas `source-preflight` 联动）：
+
+- **R1 引擎匹配**：DiffSynth 组件与 ComfyUI 组件不混装。
+- **R2 量化成套**：主模型、文本编码器、VAE 必须同一量化族（NF4 全家桶或官方 BF16 全家桶）。
+- **R3 分区匹配**：FL2VA 主模型必须配 FL2VA Processor，Ref2VA 同理。
+- **R4 显存可行性**：估算最低显存显著超过实际显存即拒绝。
+- **R5 磁盘可行性**：包体超过模型目录剩余空间即拒绝。
+
+下载器合同：Range 断点续传（`.part`）、失败指数退避重试、真实测速（Range 采样 4MB，评分 = 速度 75% + 延迟 25%）、国内源（魔搭 / hf-mirror）优先、海外源需记录 `OVERSEAS_FALLBACK`。远端目录列举走 HF tree API 与魔搭 repo files API。
+
+### 26.6 执行链分工（生产 vs 参考）
+
+- **生产默认链（已收口）**：ComfyUI 0.31.0 + 剪枝 INT8 FL2VA + drbaph 剪枝专用 raw-key Turbo LoRA + INT4 ConvRot Qwen 文本编码器 + 原生视频/音频 VAE + `--lowvram --fp16-vae --use-sage-attention`；640×384 默认档、832×480 精选档、1088×608 极限档；8 steps 正式、4 steps 预演；Director 编排 + Motion Context AV latent 接力；独立 TTS/SFX + FFmpeg/Remotion 混音。
+- **参考/隔离链**：DiffSynth-Studio NF4/GGUF（Kevrai 路线）作为低资源第二执行后端，隔离端口与目录，只做 A/B 对照与兼容性证据；不进入默认生产穷举，不把其结果冒充生产验收。
+- **图片工作台参考**：Z-Image-Turbo（8 步）/ Qwen-Image-2512 的显存互斥加载模式（生成前互相卸载）可参考进图片 Provider 的资源租约。
+
+### 26.7 技术栈版本基线
+
+`diffsynth>=2.1.0`、`bitsandbytes>=0.43`、PyAV `av>=12`、`imageio>=2.31` + `imageio-ffmpeg`、`psutil>=5.9`、`requests>=2.31`；Python 3.10–3.14。torch 必须按硬件从官方索引安装（NVIDIA cu124/cu128；ROCm rocm6.2；昇腾 torch-npu 2.7.1），禁止用国内 PyPI 镜像装 torch（2026-08 实测会装到 CPU 版）。
+
+### 26.8 与既有章节的联动
+
+- §6.3 模型适配矩阵：H3 行增加 DiffSynth-Studio 参考后端（隔离 A/B）。
+- §13.2 RenderJob：缓存键已含 model/lora/workflow revision；新增组件前先跑 §26.5 的 R1–R5 预检。
+- §16 版权合规：Kevrai-Omni（CC BY-NC-SA 4.0）与 H3 Community License 进入权利台账必查项。
+- §20 实施路线：P1 的 workflow/model/LoRA registry 直接复用本章事实卡与门禁，不重复调研。
+
+### 26.9 后续动作（未实现声明）
+
+- 把事实卡落入 `canon/MODEL_REGISTRY.md` 与 provider capability manifest（后续代码任务，不在本轮文档任务内）。
+- 下载器与 R1–R5 门禁由平台自研 adapter 实现，通过 Atlas `source-preflight` 与 `reuse-decision` 留档。
+- 本轮仅完成蓝图融合：未下载、未安装、未复制任何第三方代码，未改动生产链。
+
+### 26.10 本轮任务上下文记录（2026-08-21，dsh）
+
+- Atlas 任务：`task-20260821-021356-a5d586`（Kevrai-Omni 开源 H3 工作站部件融合进 AI 影视创作工厂蓝图）。
+- 国内源预检：gh-proxy.com（HTTP 200）可用；gitclone.com 502；gitee 无此仓库；kkgithub 404。已用 gh-proxy 镜像下载到外盘。
+- 代码快照：`/Volumes/AJW-Data/Projects/_external_kevrai-omni/repo`（43 文件，branch main）；压缩包 SHA-256 `cb1b943214bdb979104038bc154bd6063afedebf71eb5f303d8b32650d2eed89`。
+- 拆解报告：`docs/KEVRAI_OMNI_TEARDOWN.md`——模块原理→平台映射、可吸收数据结构、不采用部分、与本平台 H3 实测对齐表。
+- 复用决策：`adapt`——只吸收事实/参数/门禁思想，自研薄 adapter 承载，不复制 CC BY-NC-SA 4.0 代码。
+- 范围声明：本轮未下载模型权重、未安装运行依赖、未复制第三方代码进生产链；下载快照仅用于本地原理拆解。

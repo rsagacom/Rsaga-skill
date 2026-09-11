@@ -2,6 +2,12 @@
 
 > 产品范围已升级为“AI 影视创作工厂”。本文件保留为漫剧/H3 生产子蓝图，负责记录历史功能、H3 本地生成和现有 Web/API 实现；小说创作、剧本改编、人设三视图、场景/道具、画面分镜、预演、音频、时间线和外部剪辑器的总产品规划请以 [`AI_FILM_FACTORY_BLUEPRINT.md`](./AI_FILM_FACTORY_BLUEPRINT.md) 为准。
 
+> **📍 2026-08-23 迁移通告（现行事实，优先级高于下文旧路径）**
+> H3 本地生产环境已从双盘缠绕（`/mnt/gaosu_sata` + `/mnt/sd_nvme/MiniMax-H3`）整体统一迁移至 **`/mnt/gaosu_nvme/h3-production/`**（自足，三道验收门全过）。
+> 路径映射：`/mnt/gaosu_sata/ComfyUI` → `/mnt/gaosu_nvme/h3-production/ComfyUI`；`/mnt/sd_nvme/MiniMax-H3` → `/mnt/gaosu_nvme/h3-production/runtime`；`/mnt/gaosu_sata/MiniMax-H3`、`MiniMax-H3-NF4`、`MiniMax-H3-diffsynth` → 同名子目录。
+> venv 现行：ComfyUI 主程序用共享环境 `/mnt/gaosu_nvme/AI-Linux/boogu/ComfyUI/.venv`（py3.14.6，含 sqlalchemy/transformers/sageattention/torch）；`runtime/runtime-venv` 为节点侧 torch/sageattention 环境。隔离实例端口建议 **8192**（8189 已被 boogu-api 占用）。
+> 旧盘即将随「高速sata NTFS→XFS 转换」清空重格；本文历史证据段落中的旧路径仅作历史记录，不代表现存位置。验收证据：Atlas `task-20260822-150643-0fe352`（节点门 + 2026-08-17 短链×2 + 2026-08-19 长链 Director+MotionContext 接力全部 success，LoRA 每次 call `is_injected=True`，旧盘模型加载 = 0）。
+
 最新状态覆盖：v2.06（2026-08-17）。顶层长摘要中的历史版本号保留作兼容索引，以下实现记录以最新版本为准。
 
 ## v2.05 平台参考长链音频生产门禁（2026-08-17）

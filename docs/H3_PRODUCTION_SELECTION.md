@@ -1,5 +1,11 @@
 # H3 长期生产底座选择
 
+> **📍 2026-08-23 迁移通告（现行事实，优先级高于下文旧路径）**
+> H3 本地生产环境已从双盘缠绕（`/mnt/gaosu_sata` + `/mnt/sd_nvme/MiniMax-H3`）整体统一迁移至 **`/mnt/gaosu_nvme/h3-production/`**（自足，三道验收门全过）。
+> 路径映射：`/mnt/gaosu_sata/ComfyUI` → `/mnt/gaosu_nvme/h3-production/ComfyUI`；`/mnt/sd_nvme/MiniMax-H3` → `/mnt/gaosu_nvme/h3-production/runtime`；`/mnt/gaosu_sata/MiniMax-H3`、`MiniMax-H3-NF4`、`MiniMax-H3-diffsynth` → 同名子目录。
+> venv 现行：ComfyUI 主程序用共享环境 `/mnt/gaosu_nvme/AI-Linux/boogu/ComfyUI/.venv`（py3.14.6，含 sqlalchemy/transformers/sageattention/torch）；`runtime/runtime-venv` 为节点侧 torch/sageattention 环境。隔离实例端口建议 **8192**（8189 已被 boogu-api 占用）。
+> 旧盘即将随「高速sata NTFS→XFS 转换」清空重格；本文历史证据段落中的旧路径仅作历史记录，不代表现存位置。验收证据：Atlas `task-20260822-150643-0fe352`（节点门 + 2026-08-17 短链×2 + 2026-08-19 长链 Director+MotionContext 接力全部 success，LoRA 每次 call `is_injected=True`，旧盘模型加载 = 0）。
+
 更新时间：2026-08-18  
 硬件：Linux `cachyos-ai`，RTX 3060 12GB，32GB RAM  
 证据总览：`/Volumes/AJW-Data/Projects/novel-to-comic-engine/test-runs/`
